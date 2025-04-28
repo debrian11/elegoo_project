@@ -31,8 +31,6 @@ unsigned long servo2_lastUpdate = 0;
 enum motorstate_t { STOP, FORWARD, BACKWARD };
 motorstate_t currentmotorstate = STOP;
 
-
-
 void setup()
 {
   Serial.begin(9600);
@@ -40,32 +38,12 @@ void setup()
   setupServo();
 }
 
-/*
 void loop() {
   current_time = millis();
-  // unsigned long print_interval = 50;  // update every 50 ms
-  int distance_in = read_us_sensor();
-  printOutput(distance_in);
-*/
+  int distance_in = read_us_sensor(); // Read Ultrasonic sensor and covert to inches
+  printOutput(distance_in); // print output of ultrasonic sensor
 
-void loop() {
-    current_time = millis();
-    int distance_in = read_us_sensor(); // Read Ultrasonic sensor and covert to inches
-    printOutput(distance_in); // print output of ultrasonic sensor
-
-  // 1. Serial check
-  if (Serial.available() > 0) {
-      String serial_input = Serial.readStringUntil('\n');
-      serial_input.trim();
-
-      if (serial_input == "F") {
-          currentmotorstate = FORWARD;
-      } else if (serial_input == "B") {
-          currentmotorstate = BACKWARD;
-      } else if (serial_input == "stop") {
-          currentmotorstate = STOP;
-      }
-  }
+  serial_check();
 
   // 2. State Machine
   switch(currentmotorstate) {
