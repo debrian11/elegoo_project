@@ -16,3 +16,18 @@ void stop_motors() {
     analogWrite(PWMA, 0);
     analogWrite(PWMB, 0);
 }
+
+void updateMotors() {
+  switch(currentmotorstate) {
+    case FORWARD:
+        move_fwd();
+        break;
+    case BACKWARD:
+        move_back();
+        break;
+    case STOP:
+    default:
+        stop_motors();
+        break;
+    }
+}
