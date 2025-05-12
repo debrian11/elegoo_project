@@ -35,7 +35,6 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  // Update distance every 50ms
   if (current_time - ultrasonic_last_update >= 50) {
     ultrasonic_last_update = current_time;
     float new_distance = ultrasonic.getDistanceInches();
@@ -44,45 +43,13 @@ void loop() {
     }
   }
 
-  // Serial command input
   motorstate_t newCommand;
   if (serialHandler.getCommand(newCommand)) {
     currentState = newCommand;
   }
 
-  // Motor logic with auto-stop
-  switch (currentState) {
-    case FORWARD:
-      if (distance_in > move_distance) {
-        motor.forward();
-      } else if (distance_in < stop_distance) {
-        motor.stop();
-      }
-      break;
+  updateMotors(currentState, distance_in);
 
-    case BACKWARD:
-      if (distance_in > move_distance) {
-        motor.backward();
-      } else if (distance_in < stop_distance) {
-        motor.stop();
-      }
-      break;
-
-    case LEFT:
-      motor.turnLeft();
-      break;
-
-    case RIGHT:
-      motor.turnRight();
-      break;
-
-    case STOP:
-    default:
-      motor.stop();
-      break;
-  }
-
-  // Print status
   Serial.print("in: ");
   Serial.print(distance_in, 1);
   Serial.print(" | MotorState: ");
