@@ -21,7 +21,7 @@ if arduino_port != None:
 
     # While port is valid, send serial commands
     while arduino_port != None:
-        user_input = input("Enter 'f', 'b', 'stop': ")
+        user_input = input("Enter 'f (fwd)', 'b (bwd)', 's (stop)': ")
 
         # Allow user to enter cmd to exit
         if user_input.lower() == 'exit': # .lower converts the input to lowercase
