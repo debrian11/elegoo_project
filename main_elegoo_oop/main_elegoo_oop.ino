@@ -35,12 +35,9 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  if (current_time - ultrasonic_last_update >= 50) {
-    ultrasonic_last_update = current_time;
-    float new_distance = ultrasonic.getDistanceInches();
-    if (new_distance > 0) {
-      distance_in = new_distance;
-    }
+  float new_distance = ultrasonic.getDistanceInches();
+  if (new_distance > 0) {
+    distance_in = new_distance;
   }
 
   motorstate_t newCommand;
@@ -50,8 +47,5 @@ void loop() {
 
   updateMotors(currentState, distance_in);
 
-  Serial.print("in: ");
-  Serial.print(distance_in, 1);
-  Serial.print(" | MotorState: ");
-  Serial.println(printer.motorStateToString(currentState));
+  printer.print(distance_in, currentState, current_time);
 }
