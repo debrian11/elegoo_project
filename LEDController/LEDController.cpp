@@ -2,10 +2,21 @@
 #include <Arduino.h>  // Needed for pinMode, digitalWrite
 
 // Constructor: runs when you create an LEDController object
+
 LEDController::LEDController(int pinNumber) {
   ledPin = pinNumber;             // Save the pin number
   pinMode(ledPin, OUTPUT);        // Set the pin to output mode
-  //Serial.begin(9600);
+}
+
+/*
+LEDController::LEDController() {
+}
+*/
+
+uint8_t LEDController::attach(int pinNumber)
+{
+  ledPin = pinNumber;             // Save the pin number
+  pinMode(ledPin, OUTPUT);        // Set the pin to output mode
 }
 
 // Turns the LED on
