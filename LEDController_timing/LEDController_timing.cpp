@@ -55,17 +55,3 @@ void LEDController::blinker_millis_og() {
     Serial.println("Off");
   }
 }
-
-/*
-void LEDController::blinker_millis() {
-  unsigned long current_time = millis();
-  if (current_time - last_led_update >= 1000) {
-      digitalWrite(ledPin, LOW);
-      last_led_update = current_time;
-      Serial.println("Off");
-  } else {
-    digitalWrite(ledPin, HIGH);
-    Serial.println("On");
-  }
-}
-*/
