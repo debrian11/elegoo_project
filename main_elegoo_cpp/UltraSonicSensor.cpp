@@ -2,7 +2,7 @@
 #include <Arduino.h>  // needed for millis()
 
 void UltrasonicSensor::begin() {
-  // No initialization needed
+  // No initialization needed. here just because
 }
 
 float UltrasonicSensor::getDistanceInches() {
