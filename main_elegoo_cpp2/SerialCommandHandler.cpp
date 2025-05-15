@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 bool SerialCommandHandler::getCommand(motorstate_t &commandOut) {
-  if (Serial.available()) {
+  if (Serial.available()) { // returns true or false if serial availible
     char c = Serial.read();
     switch (c) {
       case 'f': commandOut = FORWARD; return true;

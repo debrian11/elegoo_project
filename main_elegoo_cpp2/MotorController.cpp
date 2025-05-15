@@ -8,6 +8,17 @@ MotorController::MotorController(int _pwmA, int _ain1,
     pwmB(_pwmB), bin1(_bin1),
     stby(_stby), speed(100) {}
 
+/* this commented out section is the same as the constructor above
+MotorController::MotorController(int _pwmA, int _ain1, int _pwmB, int _bin1, int _stby) {
+  pwmA = _pwmA;
+  ain1 = _ain1;
+  pwmB = _pwmB;
+  bin1 = _bin1;
+  stby = _stby;
+  speed = 100;
+}
+*/
+
 void MotorController::begin() {
   pinMode(ain1, OUTPUT);
   pinMode(bin1, OUTPUT);

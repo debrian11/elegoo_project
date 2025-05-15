@@ -3,9 +3,16 @@
 
 // Constructor: runs when you create an LEDController object
 
+/*
 LEDController::LEDController(int pinNumber) {
   ledPin = pinNumber;             // Save the pin number
   pinMode(ledPin, OUTPUT);        // Set the pin to output mode
+} 
+*/
+
+LEDController::LEDController(int pinNumber)
+  : ledPin(pinNumber), last_led_update(0) {
+  pinMode(ledPin, OUTPUT);
 }
 
 // Turns the LED on
