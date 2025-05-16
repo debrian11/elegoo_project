@@ -17,7 +17,6 @@ Servo_custom servo(10);
 motorstate_t currentState = STOP;
 unsigned long current_time;
 float distance_in = 0;
-int pos = 0;
 
 void setup() {
   Serial.begin(9600);
