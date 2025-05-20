@@ -7,7 +7,7 @@
 class SerialCommandHandler {
 public:
   SerialCommandHandler() {}
-  bool getCommand(motorstate_t &commandOut);
+  bool getCommand(motorstate_t &commandOut, servostate_t &servocommandOut);
 };
 
 #endif

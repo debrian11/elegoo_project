@@ -1,11 +1,12 @@
 #include "MotionController.h"
 
-MotionController::MotionController(MotorController &m)
-  : motor(m), objectTooClose(false) {}
+MotionController::MotionController(MotorController &m, Servo_custom &ref_servo)
+  : motor(m), private_servo(ref_servo), objectTooClose(false) {} // added the private servo thing
 
 void MotionController::update(motorstate_t state, float distance_in) {
   if (distance_in <= 2) {
     motor.stop();
+
     objectTooClose = true;
   } 
   else if (distance_in > 6 && objectTooClose) {
