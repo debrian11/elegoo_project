@@ -12,10 +12,19 @@ String OutputPrinter::motorStateToString(motorstate_t state) {
   }
 }
 
-void OutputPrinter::print(int distance_in, motorstate_t currentState, unsigned long current_time) {
+String OutputPrinter::servoStateToString(servostate_t s_state) {
+  switch (s_state) {
+    case SWEEP: return "SWEEP";
+    case S_STOP: return "S_STOP";
+    default: return "UNKNOWN SERVO";
+  }
+}
+
+void OutputPrinter::print(int distance_in, motorstate_t currentState, servostate_t servocurrentState,  unsigned long current_time) {
   if (current_time - lastPrintTime >= interval) {
     lastPrintTime = current_time;
-    Serial.print("in: "); Serial.print(distance_in);
-    Serial.print(" | MotorState: "); Serial.println(motorStateToString(currentState));
+    Serial.print("Servo: "); Serial.print(servoStateToString(servocurrentState));
+    Serial.print(" | Motor: "); Serial.print(motorStateToString(currentState));
+    Serial.print(" | in: "); Serial.println(distance_in);
   }
 }

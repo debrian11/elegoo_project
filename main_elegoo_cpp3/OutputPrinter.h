@@ -15,9 +15,10 @@ public:
   OutputPrinter(unsigned long updateInterval = 100)
     : lastPrintTime(0), interval(updateInterval) {}
 
-  void print(int distance_in, motorstate_t currentState, unsigned long current_time);
+  void print(int distance_in, motorstate_t currentState, servostate_t s_currentState, unsigned long current_time);
 
   String motorStateToString(motorstate_t state);
+  String servoStateToString(servostate_t s_state);
 };
 
 #endif
