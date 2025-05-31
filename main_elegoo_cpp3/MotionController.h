@@ -8,8 +8,11 @@
 class MotionController {
 private:
   MotorController &motor;
-
   bool objectTooClose;
+  bool isTurningLeft = false;
+  unsigned long turnStartTime = 0;
+  const unsigned long turnDuration = 500; // time in milliseconds
+
 
 public:
   MotionController(MotorController &m);

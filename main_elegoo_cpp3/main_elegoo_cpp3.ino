@@ -20,7 +20,6 @@ SerialCommandHandler serialHandler; // gGrabs serial
 
 motorstate_t currentState = STOP;
 servostate_t servocurrentState = S_STOP;
-
 unsigned long current_time;
 float distance_in = 0;
 
