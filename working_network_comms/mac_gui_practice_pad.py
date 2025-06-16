@@ -2,7 +2,7 @@ import tkinter as tk
 import socket
 import select
 import json
-last_pi_data = ""
+last_pi_data_json = ""
 
 # TCP Socket setup
 PI_IP = "192.168.0.63"
@@ -52,34 +52,35 @@ def l_button():
 
 # Read data from socket
 def check_pi_response():
-    global last_pi_data
+    global last_pi_data_json
 
     read_socket, _, _= select.select([mac_socket], [], [], 1)
     if mac_socket in read_socket:
-        pi_data = mac_socket.recv(1024).decode().strip().split('\n')[0]
+        pi_data_json = mac_socket.recv(1024).decode().strip().split('\n')[0]
+        rcv_status.set("Pi Status: Connected")
 
-        if pi_data != last_pi_data:
+        if pi_data_json != last_pi_data_json:
             #rcv_status.set(f"Received {pi_data}")
             #last_pi_data = pi_data
             #print(f"[MAC] Received from Pi: {pi_data}")
             try:
-                data = json.loads(pi_data)
-                servo_status.set(f"Servo: {data.get('servo', 'N/A')}")
-                motor_status.set(f"Motor: {data.get('motor', 'N/A')}")
-                distance_status.set(f"Distance: {data.get('distance', 'N/A')}")
+                read_json_data = json.loads(pi_data_json)
+                servo_status.set(f"Servo: {read_json_data.get('servo', 'N/A')}")
+                motor_status.set(f"Motor: {read_json_data.get('motor', 'N/A')}")
+                distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
             except json.JSONDecodeError:
-                rcv_status.set(f"[BAD JSON] {pi_data}")
-                print(f"[MAC ERROR] Failed to parse: {pi_data}")
+                rcv_status.set(f"[BAD JSON] {read_json_data}")
+                print(f"[MAC ERROR] Failed to parse: {read_json_data}")
 
-            last_pi_data = pi_data
+            last_pi_data_json = read_json_data
 
     mac_host.after(100, check_pi_response)
 
 # === TOP: Status labels ===
-#rcv_status = tk.StringVar()
-#rcv_label = tk.Label(mac_host, textvariable=rcv_status)
-#rcv_label.pack(pady=10)
-#rcv_status.set("Waiting for pi")
+rcv_status = tk.StringVar()
+rcv_label = tk.Label(mac_host, textvariable=rcv_status)
+rcv_label.pack(pady=10)
+rcv_status.set("Pi Status")
 
 sent_status = tk.StringVar()
 sent_label = tk.Label(mac_host, textvariable=sent_status)

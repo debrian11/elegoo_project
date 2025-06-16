@@ -37,7 +37,7 @@ if ARDUINO_PORT is None:
 
 # Configures the serial port
 PI_SERIAL_PORT = serial.Serial(port=ARDUINO_PORT, baudrate=115200, timeout=1)
-time.sleep(2)
+time.sleep(2) # For arduino
 
 # ====================== TCP Setup ======================
 HOST = ''
@@ -53,7 +53,7 @@ mac_con.setblocking(False)
 mac_connected = True
 print(f"Connect by {mac_addr}")
 
-LAST_LINE = ""
+LAST_LINE_ARDUINO_JSON = ""
 AVAILIBLE_CMDS = "f b l r s z"
 LAST_SENT = 0
 
@@ -65,17 +65,17 @@ try:
 
         # Arduino to Pi
         if PI_SERIAL_PORT.in_waiting:
-            JSON_INPUT = PI_SERIAL_PORT.readline().decode('utf-8', errors='ignore').strip()
-            if JSON_INPUT:
+            JSON_INPUT_ARDUINO = PI_SERIAL_PORT.readline().decode('utf-8', errors='ignore').strip()
+            if JSON_INPUT_ARDUINO:
                 try:
-                    arduino_data = json.loads(JSON_INPUT)
+                    arduino_data = json.loads(JSON_INPUT_ARDUINO)
                     servo_data = arduino_data.get("servo", "N/A")
                     motor_data = arduino_data.get("motor", "N/A")
                     dist_data = arduino_data.get("distance", "N/A")
-                    LAST_LINE = JSON_INPUT
+                    LAST_LINE_ARDUINO_JSON = JSON_INPUT_ARDUINO
                     print(f"Servo: {servo_data} | Motor: {motor_data} | Distance: {dist_data}")
                 except json.JSONDecodeError:
-                    print(f"[ERROR] Bad JSON: {JSON_INPUT}")
+                    print(f"[ERROR] Bad JSON: {JSON_INPUT_ARDUINO}")
 
 
         # Pi to Arduino
@@ -88,7 +88,7 @@ try:
                 PI_SERIAL_PORT.write((mac_cmd + '\n').encode('utf-8'))
             
             except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
-                print("[MAC] Disconnected during recv")
+                print("[MAC] Disconnected")
                 mac_connected = False
                 PI_SERIAL_PORT.write(b's\n')
 
@@ -97,7 +97,7 @@ try:
         if current_time - LAST_SENT >= 0.05:
             #PI_2_MAC = f"\033[2A\033[KStatus: {LAST_LINE}\n\033[KAvailable Commands: {AVAILIBLE_CMDS}\n"
             #mac_con.sendall(PI_2_MAC.encode('utf-8'))
-            mac_con.sendall((LAST_LINE + '\n').encode('utf-8'))
+            mac_con.sendall((LAST_LINE_ARDUINO_JSON + '\n').encode('utf-8'))
             LAST_SENT = current_time
 
 except KeyboardInterrupt:
