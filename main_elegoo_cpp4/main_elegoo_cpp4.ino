@@ -22,7 +22,7 @@ motorstate_t currentState = STOP;
 servostate_t servocurrentState = S_STOP;
 unsigned long current_time;
 unsigned long last_serial_time = 0;
-unsigned long serial_timeout = 1000; // Time in ms
+unsigned long serial_timeout = 2500; // Time in ms for motor movement before having to enter annother cmd
 float distance_in = 0;
 
 void setup() {

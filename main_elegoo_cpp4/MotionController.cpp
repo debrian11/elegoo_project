@@ -35,7 +35,7 @@ void MotionController::update(motorstate_t state_motor, float distance_in) {
   unsigned long currentmotor_time = millis();
 
   // If too close, start turning left (non-blocking)
-  if (distance_in <= 2 && !isTurningLeft) {
+  if (distance_in <= 6 && !isTurningLeft) {
     objectTooClose = true;
     isTurningLeft = true;
     turnStartTime = currentmotor_time;

@@ -49,6 +49,7 @@ def main():
             if mac_cmd:
                 print(f"[PI] Received: {mac_cmd}")
                 update_status(mac_cmd)
+                print(f"{status}")
 
         # Send to Mac every 50ms
         if current_time - last_sent >= 0.05:
