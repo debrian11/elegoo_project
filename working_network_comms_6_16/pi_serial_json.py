@@ -6,6 +6,8 @@ import select
 import serial
 import json
 import serial.tools.list_ports
+import subprocess
+from modules.pi_stream_video_usb import pi_video_stream
 
 # ----- Flow ------ 
 # 1) Connect to Arduino
@@ -58,6 +60,10 @@ AVAILIBLE_CMDS = "f b l r s z"
 LAST_SENT = 0
 
 
+# ====================== Start video stream ======================
+print("Starting to stream video now")
+stream_video = pi_video_stream()
+
 # ====================== LOOP ======================
 try:
     while True:
@@ -91,7 +97,11 @@ try:
                 print("[MAC] Disconnected")
                 mac_connected = False
                 PI_SERIAL_PORT.write(b's\n')
-
+                
+                if stream_video.poll() is None: # Check if it is still running
+                    print("Stopping video stream")
+                    stream_video.terminate()
+                    
 
         # Pi to Mac
         if current_time - LAST_SENT >= 0.05:
@@ -107,5 +117,8 @@ finally:
     PI_SERIAL_PORT.close()
     mac_con.close()
     pi_socket.close()
+    if stream_video.poll() is None: # Check if it is still running
+        stream_video.terminate()
+        stream_video.wait()
 
     

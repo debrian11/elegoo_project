@@ -2,7 +2,11 @@ import tkinter as tk
 import socket
 import select
 import json
+import subprocess
+
+#global variables
 last_pi_data_json = ""
+ffplay_process = None
 
 # TCP Socket setup
 PI_IP = "192.168.0.63"
@@ -16,7 +20,18 @@ print(f"[MAC] Connected to Pi at {PI_IP} and port {PORT}")
 # GUI SETUP
 mac_host = tk.Tk()
 mac_host.title("Test GUI")
-mac_host.geometry("800x500") # width x height
+#mac_host.geometry("800x500+400+500") # width x height
+
+mac_host.update_idletasks()
+
+# Force position on primary display (usually far left screen)
+window_width = 800
+window_height = 500
+x = 200    # shift from the left edge of main screen
+y = 100    # 100 pixels down from top
+
+mac_host.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
 
 # Button stuff to send characters
 def z_button():
@@ -49,6 +64,26 @@ def l_button():
     sent_status.set("Send Status: L")
     print("Sending L")
 
+def launch_video():
+    global ffplay_process
+    if ffplay_process is None or ffplay_process.poll() is not None:
+        ffplay_process = subprocess.Popen([
+            "ffplay",
+            "-fflags", "nobuffer",
+            "-flags", "low_delay",
+            "-framedrop", "udp://@:1235"
+        ])
+
+def exit_gui_button():
+    global ffplay_process
+    print("[MAC] Closing GUI")
+    if ffplay_process and ffplay_process.poll() is None:
+        print("[MAC] Shutdown video stream")
+        ffplay_process.terminate()
+        ffplay_process.wait()
+        print(f"[MAC] ffplay exit code: {ffplay_process.poll()}")
+    
+    mac_host.destroy() # closes window and the main loop
 
 # Read data from socket
 def check_pi_response():
@@ -111,6 +146,8 @@ button3 = tk.Button(button_frame, text="s button", command=s_button)
 button4 = tk.Button(button_frame, text="f button", command=f_button)
 button5 = tk.Button(button_frame, text="r button", command=r_button)
 button6 = tk.Button(button_frame, text="l button", command=l_button)
+video_button = tk.Button(mac_host, text="Launch Video Stream", command=launch_video)
+exit_button = tk.Button(mac_host, text="Close GUI", command=exit_gui_button)
 
 button1.pack(side='left', padx=5)
 button2.pack(side='left', padx=5)
@@ -118,6 +155,8 @@ button3.pack(side='left', padx=5)
 button4.pack(side='left', padx=5)
 button5.pack(side='left', padx=5)
 button6.pack(side='left', padx=5)
+video_button.pack(pady=10)
+exit_button.pack(pady=10)
 
 # Step 4: Start the GUI
 check_pi_response()
