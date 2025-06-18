@@ -29,8 +29,7 @@ ARDUINO_PORT = None
 for port in ports:
     if 'USB' in port.device or 'ttyACM' in port.device or 'ttyUSB' in port.device or 'usb' in port.device:
         ARDUINO_PORT = port.device
-        print(f"Connecting to Arduino at {ARDUINO_PORT}")
-        print("Proceed to connecting to Pi")
+        print(f"Connected to Arduino at {ARDUINO_PORT}")
         break
 
 if ARDUINO_PORT is None:
@@ -44,11 +43,12 @@ time.sleep(2) # For arduino
 # ====================== TCP Setup ======================
 HOST = ''
 PORT = 9000
+print(f"Opening TCP socket for Client at {PORT}")
 pi_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 pi_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 pi_socket.bind((HOST, PORT))
 pi_socket.listen(1)
-print(f"Waiting for TCP client on port {PORT}")
+print(f"Start the Macbook side of things please")
 
 mac_con, mac_addr = pi_socket.accept()
 mac_con.setblocking(False)
@@ -56,7 +56,6 @@ mac_connected = True
 print(f"Connect by {mac_addr}")
 
 LAST_LINE_ARDUINO_JSON = ""
-AVAILIBLE_CMDS = "f b l r s z"
 LAST_SENT = 0
 
 
@@ -67,7 +66,7 @@ stream_video = pi_video_stream()
 # ====================== LOOP ======================
 try:
     while True:
-        current_time = time.time()
+        CURRENT_TIME = time.time()
 
         # Arduino to Pi
         if PI_SERIAL_PORT.in_waiting:
@@ -104,11 +103,9 @@ try:
                     
 
         # Pi to Mac
-        if current_time - LAST_SENT >= 0.05:
-            #PI_2_MAC = f"\033[2A\033[KStatus: {LAST_LINE}\n\033[KAvailable Commands: {AVAILIBLE_CMDS}\n"
-            #mac_con.sendall(PI_2_MAC.encode('utf-8'))
+        if CURRENT_TIME - LAST_SENT >= 0.05:
             mac_con.sendall((LAST_LINE_ARDUINO_JSON + '\n').encode('utf-8'))
-            LAST_SENT = current_time
+            LAST_SENT = CURRENT_TIME
 
 except KeyboardInterrupt:
     print("\nShutting down.")

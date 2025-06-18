@@ -39,9 +39,9 @@ def create_status_labels(parent):
     }
 
 # ---- BUTTON CREATION ----
-def create_command_buttons(frame, sock, sent_status):
+def create_command_buttons(frame, socket_object, sent_status):
     def make_btn(label, byte):
-        return tk.Button(frame, text=label, command=lambda: send_cmd(sock, sent_status, byte, label))
+        return tk.Button(frame, text=label, command=lambda: send_cmd(socket_object, sent_status, byte, label))
 
     return [
         make_btn("z button", b'z'),
@@ -52,10 +52,11 @@ def create_command_buttons(frame, sock, sent_status):
         make_btn("l button", b'l')
     ]
 
-def send_cmd(sock, status_var, byte_cmd, label):
-    sock.sendall(byte_cmd)
-    status_var.set(f"Send Status: {label[-1].upper()}")
+def send_cmd(socket_object, status_var, byte_cmd, label):
+    socket_object.sendall(byte_cmd)
+    status_var.set(f"Send Status: {byte_cmd.decode().upper()}")
     print(f"Sending {label}")
+
 
 # ---- VIDEO STREAM HANDLING ----
 def launch_video():
@@ -67,13 +68,13 @@ def launch_video():
         "udp://@:1235"
     ])
 
-def close_video_stream(proc):
-    if proc and proc.poll() is None:
-        proc.terminate()
-        proc.wait()
+def close_video_stream(process):
+    if process and process.poll() is None:
+        process.terminate()
+        process.wait()
         print("[MAC] ffplay process closed.")
 
-# ---- CHECK PI RESPONSE ----
+# ----  PI RESPONSE ----
 def check_pi_response(sock, status_vars, root, last_data_ref):
     import select
 

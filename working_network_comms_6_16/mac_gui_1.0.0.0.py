@@ -26,8 +26,12 @@ for b in create_command_buttons(button_frame, mac_socket, status_vars["sent_stat
     b.pack(side='left', padx=5)
 
 video_button = tk.Button(mac_host, text="Launch Video Stream", command=lambda: launch_video_wrapper())
-exit_button = tk.Button(mac_host, text="Close GUI", command=lambda: exit_gui())
 video_button.pack(pady=10)
+
+stop_video_button = tk.Button(mac_host, text="Stop Video Stream", command=lambda: stop_video_wrapper())
+stop_video_button.pack(pady=10)
+
+exit_button = tk.Button(mac_host, text="Close GUI", command=lambda: exit_gui())
 exit_button.pack(pady=10)
 
 # ---- VIDEO STREAM CONTROL ----
@@ -41,6 +45,13 @@ def exit_gui():
     print("[MAC] Closing GUI")
     close_video_stream(ffplay_process)
     mac_host.destroy()
+
+def stop_video_wrapper():
+    global ffplay_process
+    if ffplay_process:
+        close_video_stream(ffplay_process)
+        ffplay_process = None
+
 
 # ---- START LOOP ----
 check_pi_response(mac_socket, status_vars, mac_host, last_pi_data_json)
