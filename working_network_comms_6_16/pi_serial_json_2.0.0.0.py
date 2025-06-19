@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# 6/19/2025
+# This pi python scripts reads the json from the arduino and sends to mac
+# it reads the single character input from the mac gui and sends to the arduino
 import time
 import socket
 import select

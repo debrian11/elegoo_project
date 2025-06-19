@@ -1,8 +1,7 @@
 /* 6/17/2025
-This .ino is the first interation tested / integrated with the Pi and Mac Gui.
-No encoder adjustments are enabled in this scripts.
+This .ino will be the first interation in reading/cmding 2 inputs to each of the motors on left and right.
+Encoders will eventually be integrated to a 2nd arduino so that those values adjust with the pwm cmds.
 */
-
 #include "MotorController.h"
 #include "UltraSonicSensor.h"
 #include "OutputPrinter.h"
