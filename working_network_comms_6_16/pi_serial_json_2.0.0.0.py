@@ -12,16 +12,6 @@ import serial.tools.list_ports
 import subprocess
 from modules.pi_stream_video_usb import pi_video_stream
 
-# ----- Flow ------ 
-# 1) Connect to Arduino
-# 2) Open TCP Socket to MAC
-# 3) While Loop:
-#   - Read Serial Data to Arduino
-#   - Read TCP data from Mac
-#   ---Send TCP serial data to the Pi
-#   - Send TCP Data to Mac'
-# -----Add stuff after here -----
-
 print("Starting PI_SERIAL stuff shortly!!")
 time.sleep(2)
 
@@ -74,6 +64,8 @@ try:
         # Arduino to Pi
         if PI_SERIAL_PORT.in_waiting:
             JSON_INPUT_ARDUINO = PI_SERIAL_PORT.readline().decode('utf-8', errors='ignore').strip()
+            
+            # Comment this whole portion if not needed. It's used just to print the json to the Pi terminal
             if JSON_INPUT_ARDUINO:
                 try:
                     arduino_data = json.loads(JSON_INPUT_ARDUINO)
@@ -90,6 +82,7 @@ try:
         pi_read_socket, _, _ = select.select([mac_con], [], [], 0)
         if mac_con in pi_read_socket:
             try:
+                # Take command from the mac and send it to the Arduino
                 mac_cmd = mac_con.recv(1024).decode('utf-8').strip()
                 if mac_cmd == "":
                     raise ConnectionResetError
@@ -106,6 +99,7 @@ try:
                     
 
         # Pi to Mac
+        # Periodically send the Arduino data to the Mac for GUI display
         if CURRENT_TIME - LAST_SENT >= 0.05:
             mac_con.sendall((LAST_LINE_ARDUINO_JSON + '\n').encode('utf-8'))
             LAST_SENT = CURRENT_TIME
