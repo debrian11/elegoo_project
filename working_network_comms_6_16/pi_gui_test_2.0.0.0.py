@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 # 6/19/2025
-# This pi python scripts is used to test the Mac Gui.
+# This pi python scripts is used to test the Mac Gui with JSON now
 # No Arduino is in the loop here
-# it reads the single character input from the mac gui and sends to the arduino
+
 import time
 import os
 import socket
