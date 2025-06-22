@@ -18,7 +18,7 @@ print(f"[MAC] Connected to Pi at {PI_IP} and port {PORT}")
 
 
 # Read JSON data from socket
-def check_pi_response():
+def check_pi_response_original():
     global last_pi_data_json
 
     read_socket, _, _= select.select([mac_socket], [], [], 1)
@@ -43,6 +43,37 @@ def check_pi_response():
             last_pi_data_json = read_json_data
 
     mac_host.after(100, check_pi_response)
+
+def check_pi_response():
+    global last_pi_data_json
+
+    read_socket, _, _ = select.select([mac_socket], [], [], 1)
+    if mac_socket in read_socket:
+        try:
+            pi_data_json = mac_socket.recv(1024).decode().strip().split('\n')[0]
+            rcv_status.set("Pi Status: Connected")
+
+            if pi_data_json and pi_data_json != last_pi_data_json:
+                try:
+                    read_json_data = json.loads(pi_data_json)
+
+                    servo_status.set(f"Servo: {read_json_data.get('servo', 'N/A')}")
+                    motor_status.set(f"Motor: {read_json_data.get('motor', 'N/A')}")
+                    distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
+                    time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
+                    raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
+
+                    last_pi_data_json = pi_data_json  # ✅ Set only if successful
+
+                except json.JSONDecodeError:
+                    rcv_status.set(f"Pi Status: ERROR - Bad JSON")
+                    print(f"[MAC ERROR] Bad JSON: {pi_data_json}")
+        except Exception as e:
+            rcv_status.set("Pi Status: Socket Error")
+            print(f"[MAC ERROR] Socket error: {e}")
+
+    mac_host.after(100, check_pi_response)
+
 
 # ------------------------  GUI SETUP ------------------------ #
 mac_host = tk.Tk()
@@ -108,7 +139,7 @@ right_frame.pack(side='left', padx=20)
 
 
 def b_button():
-    mac_json_msg = build_motor_json(0.5, 0.5, 0, 0) # ( L_PWM %, R_PWM %, L_motor DIR, R_motor DIR)
+    mac_json_msg = build_motor_json(0.75, 0.75, 0, 0) # ( L_PWM %, R_PWM %, L_motor DIR, R_motor DIR)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status:  fwd | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
@@ -120,13 +151,13 @@ def f_button():
     print(f"Sending {mac_json_msg}")
 
 def r_button():
-    mac_json_msg = build_motor_json(0.5, 0.1, 1, 1)
+    mac_json_msg = build_motor_json(0.5, 0.0, 1, 1)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status:  fwd | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
 
 def l_button():
-    mac_json_msg = build_motor_json(0.1, 0.5, 1, 1)
+    mac_json_msg = build_motor_json(0.0, 0.5, 1, 1)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status:  fwd | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")

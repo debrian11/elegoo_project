@@ -10,13 +10,12 @@ import serial
 import json
 import serial.tools.list_ports
 import os
-import subprocess
 from modules.pi_stream_video_usb import pi_video_stream
 
 print("Starting PI_SERIAL stuff shortly!!")
 time.sleep(2)
 
-# ====================== SERIAL SETUP ======================
+# ====================== SERIAL SETUP ==============================================================================================================
 ports = list(serial.tools.list_ports.comports())
 ARDUINO_PORT = None
 
@@ -34,7 +33,7 @@ if ARDUINO_PORT is None:
 PI_SERIAL_PORT = serial.Serial(port=ARDUINO_PORT, baudrate=115200, timeout=1)
 time.sleep(2) # For arduino
 
-# ====================== TCP Setup ======================
+# ====================== TCP Setup ==============================================================================================================
 HOST = ''
 PORT = 9000
 print(f"Opening TCP socket for Client at {PORT}")
@@ -52,9 +51,13 @@ print(f"Connect by {mac_addr}")
 LAST_LINE_ARDUINO_JSON = ""
 LAST_SENT = 0
 STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0}
+# {"L_DIR": 1, "R_DIR": 1, "L_PWM": 50, "R_PWM": 0}
+# {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 50}
+# {"L_DIR": 0, "R_DIR": 0, "L_PWM": 50, "R_PWM": 0}
+# {"L_DIR": 0, "R_DIR": 0, "L_PWM": 0, "R_PWM": 50}
 
 
-# ====================== Start video stream ======================
+# ====================== Start video stream ========================================================================================
 if os.path.exists('/dev/video0'):
     print("Camera connected, starting stream")
     stream_video = pi_video_stream()
@@ -62,12 +65,12 @@ else:
     print("No camera connected at /dev/video0, skipping video stream")
 
 
-# ====================== LOOP ======================
+# ====================== LOOP ==============================================================================================================
 try:
     while True:
         CURRENT_TIME = time.time()
-
-        # Arduino to Pi
+        # ---------------------------------------------------------------------------------------------
+        # ARDUINO to PI
         if PI_SERIAL_PORT.in_waiting:
             JSON_INPUT_ARDUINO = PI_SERIAL_PORT.readline().decode('utf-8', errors='ignore').strip()
             
@@ -84,10 +87,10 @@ try:
                     print(print_arduino_json)
                     #print(f"Servo: {servo_data} | Motor: {motor_data} | Distance: {dist_data}")
                 except json.JSONDecodeError:
-                    print(f"[ERROR] Bad JSON: {JSON_INPUT_ARDUINO}")
+                    print(f"[ERROR] Bad JSON: {JSON_INPUT_ARDUINO} '\n")
 
-
-        # Pi to Arduino
+        # ---------------------------------------------------------------------------------------------
+        # PI to ARDUINO
         pi_read_socket, _, _ = select.select([mac_con], [], [], 0)
         if mac_con in pi_read_socket:
             try:
@@ -98,16 +101,16 @@ try:
                 PI_SERIAL_PORT.write((mac_cmd + '\n').encode('utf-8'))
             
             except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
-                print("[MAC] Disconnected")
                 mac_connected = False
+                print("[MAC] Disconnected")
                 print('STOPPING MOTORS')
                 PI_SERIAL_PORT.write((json.dumps(STOP_JSON) + '\n').encode('utf-8'))
                 if os.path.exists('/dev/video0'):
                     if stream_video.poll() is None: # Check if it is still running
                         print("Stopping video stream")
                         stream_video.terminate()
-
-        # Pi to Mac
+        # ---------------------------------------------------------------------------------------------
+        # PI to MAC
         # Periodically send the Arduino data to the Mac for GUI display
         if CURRENT_TIME - LAST_SENT >= 0.05:
             mac_con.sendall((LAST_LINE_ARDUINO_JSON + '\n').encode('utf-8'))
