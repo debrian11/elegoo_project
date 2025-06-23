@@ -1,66 +1,74 @@
-/* 6/17/2025
+/* 6/22/2025
 This .ino will be the first interation in reading/cmding 2 inputs to each of the motors on left and right.
 Encoders will eventually be integrated to a 2nd arduino so that those values adjust with the pwm cmds.
 */
-#include "MotorController.h"
-#include "UltraSonicSensor.h"
+
 #include "OutputPrinter.h"
 #include "SerialCommandHandler.h"
-#include "MotionController.h"
-#include "ServoMotionController.h"
+#include "UltraSonicSensor.h"
 #include "Servo_custom.h"
 
 // Create objects:
-// MotorController
-MotorController motorController(5, 7, 6, 8, 3); //(pwmA, ain1, pwmB, bin1, stby)
-Servo_custom servo(10);
-Servo_custom servo2(11);
-MotionController motionController(motorController);
-ServoMotionController servoMotionController(servo);
-ServoMotionController servoMotionController2(servo2);
 UltrasonicSensor ultrasonic(13, 12); // (trig / echo)
-OutputPrinter printer(50);  // Print every x-ms
+int servo_pin = 11;
+int servo_sweep_status = 0;
+Servo_custom servo1(servo_pin);
+OutputPrinter serial_printer(50);  // Print every x-ms
 SerialCommandHandler serialHandler; // gGrabs serial 
 
-motorstate_t currentState = STOP;
-servostate_t servocurrentState = S_STOP;
 unsigned long current_time;
 unsigned long last_serial_time = 0;
-unsigned long serial_timeout = 2500; // Time in ms for motor movement before having to enter annother cmd
-float distance_in = 0;
+unsigned long last_distance_update = 0;
+float distance_in = 10;
+
+// Initial Motor Stuff
+int left_motor_direction = 0;
+int right_motor_direction = 0;
+int left_motor_pwm = 0;
+int right_motor_pwm = 0;
+
+// Initial Motor Pins setup
+int left_motor_pwm_pin = 6;
+int right_motor_pwm_pin = 5;
+int left_motor_direction_pin = 8;
+int right_motor_direction_pin = 7;
+int stby = 3;
 
 void setup() {
   Serial.begin(115200);
-  motorController.begin();
-  ultrasonic.begin();
-  servo.servo_custom_begin();
-  servo2.servo_custom_begin();
+
+  // Servo Setup
+  servo1.servo_custom_begin();
+
+  // Motor Setup
+  pinMode(left_motor_direction_pin, OUTPUT);
+  pinMode(right_motor_direction_pin, OUTPUT);
+  pinMode(left_motor_pwm_pin, OUTPUT);
+  pinMode(right_motor_pwm_pin, OUTPUT);
+  pinMode(stby, OUTPUT);
+  digitalWrite(stby, HIGH);
 }
+
+// ------------------------------------------------------------------------------------------//
 
 void loop() {
   current_time = millis();
 
+// Ultrasonic Sensor
   float new_distance = ultrasonic.getDistanceInches();
   if (new_distance > 0) {
     distance_in = new_distance;
   }
 
-  motorstate_t newCommand;
-  servostate_t newServoCommand;
-  if (serialHandler.getCommand(newCommand, newServoCommand)) {
-    currentState = newCommand;
-    servocurrentState = newServoCommand;
-    last_serial_time = current_time;
-  }
+  // Parse the incoming Pi JSON for motor speed and direction
+  serialHandler.getCommand_json(left_motor_direction, right_motor_direction, 
+                                left_motor_pwm, right_motor_pwm, 
+                                left_motor_direction_pin, right_motor_direction_pin, 
+                                left_motor_pwm_pin, right_motor_pwm_pin,
+                                servo_sweep_status);
+  
+  servo1.servo_custom_sweep(servo_sweep_status);
 
-  // If serial command hasn't arrived in time, STOP
-  if (current_time - last_serial_time >= serial_timeout) {
-    currentState = STOP;
-  }
-
-  motionController.update(currentState, distance_in);
-  servoMotionController.update(servocurrentState, distance_in);
-  servoMotionController2.update(servocurrentState, distance_in);
-  printer.json_print(distance_in, currentState, servocurrentState, current_time);  
-
+  // Output the motor speed and Ultrasonic distance back
+  serial_printer.json_print(distance_in, left_motor_pwm, right_motor_pwm, current_time);
 }

@@ -16,10 +16,11 @@ void Servo_custom::servo_custom_write(int servo_angle1){
     servo_custom_object.write(servo_angle1);
 }
 
-void Servo_custom::servo_custom_sweep1() {
-  if (millis() - lastMoveTime >= interval) {
-    lastMoveTime = millis();
-    servo_custom_object.write(currentAngle);
+void Servo_custom::servo_custom_sweep(int sweep_status) {
+  if (sweep_status == 1) {
+    if (millis() - lastMoveTime >= interval) {
+      lastMoveTime = millis();
+      servo_custom_object.write(currentAngle);
 
     if (goingUp) {
       currentAngle += step;
@@ -35,18 +36,6 @@ void Servo_custom::servo_custom_sweep1() {
       }
     }
   }
-}
+  }
 
-void Servo_custom::servo_custom_sweep2(int angle_start, int angle_end){
-    Serial.println("Phase 1");
-    for (pos_0 = angle_start; pos_0 <= angle_end; pos_0++) {
-        servo_custom_object.write(pos_0);
-        delay(30);
-    }
-
-    Serial.println("Phase 2");
-    for (pos_0 = angle_end; pos_0 >= angle_start; pos_0--) {
-        servo_custom_object.write(pos_0);
-        delay(30);
-    }
 }

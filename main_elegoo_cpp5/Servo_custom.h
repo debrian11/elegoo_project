@@ -13,8 +13,7 @@ public:
     void servo_custom_begin();
     void servo_custom_stop();
     void servo_custom_write(int servo_angle1);
-    void servo_custom_sweep1();
-    void servo_custom_sweep2(int angle_start, int angle_end);
+    void servo_custom_sweep(int sweep_status);
     int initial_angle;
     int pos_0;
     unsigned long servo_last_update;
@@ -23,9 +22,9 @@ public:
     bool goingUp = true;
 
     const int step = 10;
-    const int minAngle = 40;
-    const int maxAngle = 140;
-    const unsigned long interval = 200;
+    const int minAngle = 45;
+    const int maxAngle = 135;
+    const unsigned long interval = 120;
 };
 
 #endif
