@@ -1,6 +1,7 @@
 #include "SerialCommandHandler.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include "Motorcontroller.h"
 
 String arduino_input_buffer = "";  // Accumulate chars into a full JSON string
 unsigned long last_pi_time = 0;
@@ -8,11 +9,7 @@ unsigned long last_pi_time = 0;
 // Servo variables
 int SERVO_SWEEP_STATUS = 0;
 
-bool SerialCommandHandler::getCommand_json(int &L_MTR_DIR, int &R_MTR_DIR, 
-                                           int &L_MTR_PWM, int &R_MTR_PWM,
-                                           int &L_MTR_DIR_PIN, int &R_MTR_DIR_PIN,
-                                           int &L_MTR_PWM_PIN, int &R_MTR_PWM_PIN,
-                                           int &SERVO_SWEEP_STATUS) {
+bool SerialCommandHandler::getCommand_json(int &SERVO_SWEEP_STATUS) {
 
   if (Serial.available()) { 
     char c = Serial.read(); 
@@ -28,18 +25,18 @@ bool SerialCommandHandler::getCommand_json(int &L_MTR_DIR, int &R_MTR_DIR,
         return false;
       }
 
-      // Grab the values from the Pi JSON:  {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0, "S_SWEEP": 0}
-      L_MTR_PWM = pi_json_inc["L_PWM"];
-      R_MTR_PWM = pi_json_inc["R_PWM"];
-      L_MTR_DIR = (pi_json_inc["L_DIR"] == 0) ? LOW : HIGH; // (condition) ? (value_if_true) : (value_if_false);
-      R_MTR_DIR = (pi_json_inc["R_DIR"] == 0) ? LOW : HIGH;
+      // Grab the values from the Pi JSON:  { "L_DIR":0, "R_DIR":0, "L_PWM":50, "R_PWM":50 }
+      
+      int L_MTR_PWM = pi_json_inc["L_PWM"];
+      int R_MTR_PWM = pi_json_inc["R_PWM"];
+      int L_MTR_DIR = (pi_json_inc["L_DIR"] == 0) ? LOW : HIGH; // (condition) ? (value_if_true) : (value_if_false);
+      int R_MTR_DIR = (pi_json_inc["R_DIR"] == 0) ? LOW : HIGH;
+      
       SERVO_SWEEP_STATUS = pi_json_inc["S_SWEEP"];
 
       // === Apply motor control directly ===
-      digitalWrite(L_MTR_DIR_PIN, L_MTR_DIR);
-      digitalWrite(R_MTR_DIR_PIN, R_MTR_DIR);
-      analogWrite(L_MTR_PWM_PIN, L_MTR_PWM);
-      analogWrite(R_MTR_PWM_PIN, R_MTR_PWM);
+      _motor_object.drive(L_MTR_PWM, R_MTR_PWM,
+                          L_MTR_DIR, R_MTR_DIR);
 
       last_pi_time = millis();
       arduino_input_buffer = "";  // Clear after processing

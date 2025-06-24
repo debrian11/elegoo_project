@@ -25,9 +25,15 @@ for port in ports:
         print(f"(1) Connected to Arduino at {ARDUINO_PORT}")
         break
 
-if ARDUINO_PORT is None:
-    print("No Arduino found.")
-    exit(1)
+while ARDUINO_PORT is None:
+    print("No Arduino found. Retrying...")
+    time.sleep(2)
+    ports = list(serial.tools.list_ports.comports())
+    for port in ports:
+        if 'USB' in port.device or 'ttyACM' in port.device or 'ttyUSB' in port.device:
+            ARDUINO_PORT = port.device
+            print(f"(1) Connected to Arduino at {ARDUINO_PORT}")
+            break
 
 # Configures the serial port
 PI_SERIAL_PORT = serial.Serial(port=ARDUINO_PORT, baudrate=115200, timeout=1)

@@ -16,7 +16,7 @@ int servo_sweep_status = 0;
 Servo_custom servo1(servo_pin);
 OutputPrinter serial_printer(50);  // Print every x-ms
 SerialCommandHandler serialHandler; // gGrabs serial 
-MotorController motor(6, 8, 5, 7, 3);
+
 
 unsigned long current_time;
 unsigned long last_serial_time = 0;
@@ -35,21 +35,26 @@ int right_motor_pwm_pin = 5;
 int left_motor_direction_pin = 8;
 int right_motor_direction_pin = 7;
 int stby = 3;
+MotorController motor(left_motor_direction_pin, right_motor_direction_pin,
+                      left_motor_pwm_pin, right_motor_pwm_pin,
+                      stby);
 
 void setup() {
   Serial.begin(115200);
 
   // Servo Setup
   servo1.servo_custom_begin();
-  //motor.begin();
+  motor.begin();
 
-  // Motor Setup
+  // Motor Setup 
+  /*
   pinMode(left_motor_direction_pin, OUTPUT);
   pinMode(right_motor_direction_pin, OUTPUT);
   pinMode(left_motor_pwm_pin, OUTPUT);
   pinMode(right_motor_pwm_pin, OUTPUT);
   pinMode(stby, OUTPUT);
   digitalWrite(stby, HIGH);
+  */
 }
 
 // ------------------------------------------------------------------------------------------//
@@ -64,11 +69,7 @@ void loop() {
   }
 
   // Parse the incoming Pi JSON for motor speed and direction
-  serialHandler.getCommand_json(left_motor_direction, right_motor_direction, 
-                                left_motor_pwm, right_motor_pwm, 
-                                left_motor_direction_pin, right_motor_direction_pin, 
-                                left_motor_pwm_pin, right_motor_pwm_pin,
-                                servo_sweep_status);
+  serialHandler.getCommand_json(servo_sweep_status);
   
   servo1.servo_custom_sweep(servo_sweep_status);
 

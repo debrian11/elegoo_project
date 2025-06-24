@@ -37,8 +37,8 @@ def check_pi_response():
                 try:
                     read_json_data = json.loads(pi_data_json)
 
-                    servo_status.set(f"Servo: {read_json_data.get('servo', 'N/A')}")
-                    motor_status.set(f"Motor: {read_json_data.get('motor', 'N/A')}")
+                    #servo_status.set(f"Servo: {read_json_data.get('servo', 'N/A')}")
+                    #motor_status.set(f"Motor: {read_json_data.get('motor', 'N/A')}")
                     distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
                     time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
                     raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
