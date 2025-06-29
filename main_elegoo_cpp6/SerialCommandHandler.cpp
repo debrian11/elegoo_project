@@ -5,8 +5,6 @@
 
 String arduino_input_buffer = "";  // Accumulate chars into a full JSON string
 unsigned long last_pi_time = 0;
-
-// Servo variables
 int SERVO_SWEEP_STATUS = 0;
 
 bool SerialCommandHandler::getCommand_json(int &SERVO_SWEEP_STATUS) {
@@ -26,7 +24,6 @@ bool SerialCommandHandler::getCommand_json(int &SERVO_SWEEP_STATUS) {
       }
 
       // Grab the values from the Pi JSON:  { "L_DIR":0, "R_DIR":0, "L_PWM":50, "R_PWM":50 }
-      
       int L_MTR_PWM = pi_json_inc["L_PWM"];
       int R_MTR_PWM = pi_json_inc["R_PWM"];
       int L_MTR_DIR = (pi_json_inc["L_DIR"] == 0) ? LOW : HIGH; // (condition) ? (value_if_true) : (value_if_false);
