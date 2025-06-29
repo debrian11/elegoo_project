@@ -1,15 +1,12 @@
 [Unit]
-Description=Starts the python script for the Pi Arduino Car
+Description=Checks for arduino ports then starts service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/env python3 /opt/scripts/pi_serial_json_3.0.0.0.py
-Restart=on-failure
+ExecStart=/opt/scripts/start-arduino.sh
+Restart=always
 StandardOutput=journal
 StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
-
-
-

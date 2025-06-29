@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # 6/22/2025
-# This pi python scripts takes 2.0.0.0 and adds turning logic with object detection
+# This pi python scripts takes 3.0.0.0 and adds arduino nano detection.
 
 import time
 import socket
@@ -15,29 +15,40 @@ from modules.pi_stream_video_usb import pi_video_stream
 print("Starting PI_SERIAL stuff shortly!!")
 time.sleep(2)
 
+# ----- Global Variables ---- #
+LAST_LINE_ARDUINO_JSON = ""
+LAST_CMD_SENT_TO_ARDUINO = ""
+LAST_CMD_TIME = 0
+CMD_RESEND_INTERVAL = 0.2  # seconds
+LAST_SENT = 0
+STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0, "S_SWEEP": 0}
+TURNING = False
+TURN_THRESHOLD = 15  # cm
+LAST_NON_TURN_CMD = STOP_JSON
+servo_sweep_status = 0
+
 # ====================== SERIAL SETUP ==============================================================================================================
-ports = list(serial.tools.list_ports.comports())
-ARDUINO_PORT = None
+ELEGOO_PORT = '/dev/arduino_elegoo'
+NANO_PORT = '/dev/arduino_nano'
 
-for port in ports:
-    if 'elegoo' in port.device or 'USB' in port.device or 'ttyACM' in port.device or 'ttyUSB' in port.device or 'usb' in port.device:
-        ARDUINO_PORT = port.device
-        print(f"(1) Connected to Arduino at {ARDUINO_PORT}")
-        break
+# Check for Arduino Elegoo connection
+while not os.path.exists(ELEGOO_PORT):
+    print("No ELEGOO found. Retrying...")
+    time.sleep(1)
 
-while ARDUINO_PORT is None:
-    print("No Arduino found. Retrying...")
-    time.sleep(2)
-    ports = list(serial.tools.list_ports.comports())
-    for port in ports:
-        if 'USB' in port.device or 'ttyACM' in port.device or 'ttyUSB' in port.device:
-            ARDUINO_PORT = port.device
-            print(f"(1) Connected to Arduino at {ARDUINO_PORT}")
-            break
+print(f"(1) Connected to ELEGOO at {ELEGOO_PORT}")
+PI_ELEGOO_PORT = serial.Serial(port=ELEGOO_PORT, baudrate=115200, timeout=1)
+time.sleep(2)
+PI_ELEGOO_PORT.write((json.dumps(STOP_JSON) + '\n').encode('utf-8'))
 
-# Configures the serial port
-PI_SERIAL_PORT = serial.Serial(port=ARDUINO_PORT, baudrate=115200, timeout=1)
-time.sleep(2) # For arduino
+# Check for Arduino Nano connection
+while not os.path.exists(NANO_PORT):
+    print("No NANO found. Retrying...")
+    time.sleep(1)
+
+print(f"(1) Connected to NANO at {NANO_PORT}")
+PI_NANO_PORT = serial.Serial(port=NANO_PORT, baudrate=115200, timeout=1)
+time.sleep(2)
 
 # ====================== TCP Setup ==============================================================================================================
 HOST = ''
@@ -54,17 +65,6 @@ mac_con.setblocking(False)
 mac_connected = True
 print(f"Connect by {mac_addr}")
 
-LAST_LINE_ARDUINO_JSON = ""
-LAST_CMD_SENT_TO_ARDUINO = ""
-LAST_CMD_TIME = 0
-CMD_RESEND_INTERVAL = 0.2  # seconds
-LAST_SENT = 0
-STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0, "S_SWEEP": 0}
-TURNING = False
-TURN_THRESHOLD = 15  # cm
-LAST_NON_TURN_CMD = ""
-servo_sweep_status = 0
-
 # ====================== Start video stream ========================================================================================
 if os.path.exists('/dev/video0'):
     print("Camera connected, starting stream")
@@ -77,17 +77,17 @@ try:
     while True:
         CURRENT_TIME = time.time()
         # -----------------------------------------ARDUINO to PI----------------------------------------------------
-        if PI_SERIAL_PORT.in_waiting:
-            JSON_INPUT_ARDUINO = PI_SERIAL_PORT.readline().decode('utf-8', errors='ignore').strip()
+        if PI_ELEGOO_PORT.in_waiting:
+            JSON_INPUT_ARDUINO = PI_ELEGOO_PORT.readline().decode('utf-8', errors='ignore').strip() # Arduino string that looks like a json
             
             if JSON_INPUT_ARDUINO:
                 try:
-                    arduino_data = json.loads(JSON_INPUT_ARDUINO)
+                    arduino_data = json.loads(JSON_INPUT_ARDUINO) # parses string into a dictionary
                     L_MRT_DATA = arduino_data.get("L_motor", "N/A")
                     R_MRT_DATA = arduino_data.get("R_motor", "N/A")
                     DIST_DATA = arduino_data.get("distance", "N/A")
                     TIME_DATA = arduino_data.get("time", "N/A")
-                    LAST_LINE_ARDUINO_JSON = JSON_INPUT_ARDUINO
+                    LAST_LINE_ARDUINO_JSON = JSON_INPUT_ARDUINO # string. not a python dictionary
                     print_arduino_json = json.dumps(LAST_LINE_ARDUINO_JSON)
                     print(print_arduino_json)
 
@@ -97,7 +97,7 @@ try:
                             if not TURNING:
                                 print("[PI] Obstacle detected — STARTING TURN")
                                 turn_cmd = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 100, "R_PWM": 0, "S_SWEEP": 1}
-                                PI_SERIAL_PORT.write((json.dumps(turn_cmd) + '\n').encode('utf-8'))
+                                PI_ELEGOO_PORT.write((json.dumps(turn_cmd) + '\n').encode('utf-8'))
                                 LAST_CMD_SENT_TO_ARDUINO = json.dumps(turn_cmd)
                                 LAST_CMD_TIME = CURRENT_TIME
                                 TURNING = True
@@ -105,13 +105,14 @@ try:
                             if TURNING:
                                 print("[PI] Path clear — RESUMING LAST CMD")
                                 if LAST_NON_TURN_CMD:
-                                    PI_SERIAL_PORT.write((LAST_NON_TURN_CMD + '\n').encode('utf-8'))
+                                    PI_ELEGOO_PORT.write((json.dumps(LAST_NON_TURN_CMD) + '\n').encode('utf-8'))
                                     LAST_CMD_SENT_TO_ARDUINO = LAST_NON_TURN_CMD
                                     LAST_CMD_TIME = CURRENT_TIME
                                 TURNING = False
 
                 except json.JSONDecodeError:
                     print(f"[ERROR] Bad JSON: {JSON_INPUT_ARDUINO} '\n")
+
         # ------------------------------------------PI to ARDUINO---------------------------------------------------
         pi_read_socket, _, _ = select.select([mac_con], [], [], 0)
         if mac_con in pi_read_socket:
@@ -120,8 +121,8 @@ try:
                 mac_cmd = mac_con.recv(1024).decode('utf-8').strip()
                 if mac_cmd == "":
                     raise ConnectionResetError
-                #PI_SERIAL_PORT.write((mac_cmd + '\n').encode('utf-8'))
-                PI_SERIAL_PORT.write((mac_cmd + '\n').encode('utf-8'))
+                #PI_ELEGOO_PORT.write((mac_cmd + '\n').encode('utf-8'))
+                PI_ELEGOO_PORT.write((mac_cmd + '\n').encode('utf-8'))
                 LAST_CMD_SENT_TO_ARDUINO = mac_cmd
                 LAST_NON_TURN_CMD = mac_cmd
                 LAST_CMD_TIME = CURRENT_TIME
@@ -130,7 +131,7 @@ try:
                 mac_connected = False
                 print("[MAC] Disconnected")
                 print('STOPPING MOTORS')
-                PI_SERIAL_PORT.write((json.dumps(STOP_JSON) + '\n').encode('utf-8'))
+                PI_ELEGOO_PORT.write((json.dumps(STOP_JSON) + '\n').encode('utf-8'))
                 if os.path.exists('/dev/video0'):
                     if stream_video.poll() is None: # Check if it is still running
                         print("Stopping video stream")
@@ -145,14 +146,14 @@ try:
         # RESEND LAST CMD TO ARDUINO IF IDLE
         if CURRENT_TIME - LAST_CMD_TIME > CMD_RESEND_INTERVAL:
             if LAST_CMD_SENT_TO_ARDUINO:
-                PI_SERIAL_PORT.write((LAST_CMD_SENT_TO_ARDUINO + '\n').encode('utf-8'))
+                PI_ELEGOO_PORT.write((LAST_CMD_SENT_TO_ARDUINO + '\n').encode('utf-8'))
                 LAST_CMD_TIME = CURRENT_TIME
 
 except KeyboardInterrupt:
     print("\nShutting down.")
 
 finally:
-    PI_SERIAL_PORT.close()
+    PI_ELEGOO_PORT.close()
     mac_con.close()
     pi_socket.close()
     if os.path.exists('/dev/video0'):

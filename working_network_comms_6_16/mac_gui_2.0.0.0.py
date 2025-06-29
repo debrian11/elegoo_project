@@ -243,7 +243,7 @@ def get_pwm_from_entry():
     except ValueError:
         return 50  # fallback PWM if invalid input
 
-def build_motor_json(left_mult, right_mult, left_dir, right_dir, servo_sweep_setting):
+def build_motor_json(left_mult, right_mult, left_dir, right_dir, servo_sweep_setting): # This returns a json string
     base_pwm = get_pwm_from_entry()
     return json.dumps({
         "L_DIR": left_dir,
