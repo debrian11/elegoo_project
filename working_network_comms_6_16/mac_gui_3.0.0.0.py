@@ -77,7 +77,7 @@ control_gui.update_idletasks()  # force geometry info to update
 control_gui.title("Control GUI")
 
 gui1_window_width = 1000
-gui1_window_height = 500
+gui1_window_height = 700
 screen_width = control_gui.winfo_screenwidth()
 screen_height = control_gui.winfo_screenheight()
 center_x = int(screen_width / 2 - gui1_window_width / 2)
@@ -86,7 +86,7 @@ control_gui.geometry(f"{gui1_window_width}x{gui1_window_height}+{center_x}+{cent
 
 control_gui_title_label = tk.Label(
     control_gui,
-    text="Elegoo Motor / Servo Encoder Telemetry",
+    text="Elegoo Motor / Servo Telemetry",
     font=("Helvetica", 20, "bold"),
     bg="white",
     fg="black"
@@ -95,9 +95,8 @@ control_gui_title_label.pack(pady=20)
 
 # 2nd GUI for plotting
 # ------------- Plotting GUI Setup (Fixed) -------------
-plot_gui = tk.Tk()
+plot_gui = tk.Toplevel(control_gui)
 plot_gui.title("Plot GUI")
-plot_gui.configure(bg="white")
 
 gui2_window_width = 800
 gui2_window_height = 500
@@ -144,18 +143,6 @@ raw_json_rcvd_status = tk.StringVar()
 raw_json_rcvd_status_label = tk.Label(control_gui, textvariable=raw_json_rcvd_status)
 raw_json_rcvd_status_label.pack(pady=5)
 raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
-
-# Left Encoder Label
-lleft_motor_encoder = tk.StringVar()
-lleft_motor_encoder_label = tk.Label(control_gui, textvariable=lleft_motor_encoder)
-lleft_motor_encoder_label.pack(pady=10)
-lleft_motor_encoder.set("Left Encoder: ---")  # <- This forces text to appear at launch
-
-# Right Encoder Label
-rright_motor_encoder = tk.StringVar()
-rright_motor_encoder_label = tk.Label(control_gui, textvariable=rright_motor_encoder)
-rright_motor_encoder_label.pack(pady=10)
-rright_motor_encoder.set("Right Encoder: ---")  # <- Forces label to appear at launch
 
 # Servo Angle
 servo_angle = tk.StringVar()
