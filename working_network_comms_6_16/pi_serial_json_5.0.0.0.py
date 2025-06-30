@@ -2,7 +2,9 @@
 
 # 6/28/2025
 # This pi python scripts takes 3.0.0.0 and adds arduino nano detection.
-# 6/29/2025 change json to include servo
+# 6/29/2025 
+# change json to include servo
+# have explicity elegoo vs nano ports and commands
 
 import time
 import socket
@@ -12,20 +14,25 @@ import json
 import serial.tools.list_ports
 import os
 from modules.pi_stream_video_usb import pi_video_stream
+from collections import OrderedDict
 
 print("Starting PI_SERIAL stuff shortly!!")
 time.sleep(2)
 
 # ----- Global Variables ---- #
 STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0, "S_SWEEP": 0}
-LAST_CMD_SENT_TO_ARDUINO = json.dumps(STOP_JSON)
+LAST_CMD_SENT_TO_ELEGO = json.dumps(STOP_JSON)
 LAST_NON_TURN_CMD =  json.dumps(STOP_JSON)
-LAST_LINE_ARDUINO_JSON = ""
+LAST_LINE_ELEGOO_JSON = ""
+LAST_LINE_NANO_JSON = ""
 LAST_CMD_TIME = 0
-CMD_RESEND_INTERVAL = 0.2  # seconds
-LAST_SENT = 0
+LAST_ELEGOO_SENT = 0
+LAST_NANO_SENT = 0
 TURNING = False
 TURN_THRESHOLD = 15  # cm
+CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
+TM_TIMING_NANO = 0.200 # seconds
+TM_TIMING_ELEGOO = 0.05 # seconds
 
 # ====================== SERIAL SETUP ==============================================================================================================
 ELEGOO_PORT = '/dev/arduino_elegoo'
@@ -76,33 +83,53 @@ else:
 try:
     while True:
         CURRENT_TIME = time.time()
-        # -----------------------------------------ARDUINO to PI----------------------------------------------------
-        if PI_ELEGOO_PORT.in_waiting:
-            JSON_INPUT_ARDUINO = PI_ELEGOO_PORT.readline().decode('utf-8', errors='ignore').strip() # Arduino string that looks like a json
+        # -----------------------------------------NANO to PI----------------------------------------------------
+        if PI_NANO_PORT.in_waiting:
+            JSON_INPUT_NANO = PI_NANO_PORT.readline().decode('utf-8', errors='ignore').strip() # Arduino string that looks like a json
             
-            if JSON_INPUT_ARDUINO:
+            if JSON_INPUT_NANO:
                 try:
-                    arduino_data = json.loads(JSON_INPUT_ARDUINO) # parses string into a dictionary
-                    # {"L_motor":0,"R_motor":0,"distance":91,"S_angle":55,"time":25686}
-                    L_MRT_DATA = arduino_data.get("L_motor", "N/A")
-                    R_MRT_DATA = arduino_data.get("R_motor", "N/A")
-                    DIST_DATA = arduino_data.get("distance", "N/A")
-                    SERVO_DATA = arduino_data.get("S_angle", "N/A")
-                    TIME_DATA = arduino_data.get("time", "N/A")
-                    LAST_LINE_ARDUINO_JSON = JSON_INPUT_ARDUINO # string. not a python dictionary
+                    NANO_JSON_DATA = json.loads(JSON_INPUT_NANO) # parses string into a dictionary
+                    # {"L_ENCD":0,"R_ENCD":0,"time":0}
+                    L_ENCD = NANO_JSON_DATA.get("L_ENCD", "N/A")
+                    R_ENCD = NANO_JSON_DATA.get("R_ENCD", "N/A")
+                    TIME_DATA = NANO_JSON_DATA.get("time", "N/A")
+                    LAST_LINE_NANO_JSON = JSON_INPUT_NANO # string. not a python dictionary
                     
                     # Print the json to the pi terminal locally to see mssg
-                    print_arduino_json = json.dumps(LAST_LINE_ARDUINO_JSON)
-                    print(print_arduino_json)
+                    print_nano_json = json.dumps(LAST_LINE_NANO_JSON)
+                    #print(print_nano_json)
+
+                except json.JSONDecodeError:
+                    print(f"[ERROR] Bad JSON: {JSON_INPUT_NANO} '\n")
+
+        # -----------------------------------------ELEGOO to PI----------------------------------------------------
+        if PI_ELEGOO_PORT.in_waiting:
+            JSON_INPUT_ELEGOO = PI_ELEGOO_PORT.readline().decode('utf-8', errors='ignore').strip() # Arduino string that looks like a json
+            
+            if JSON_INPUT_ELEGOO:
+                try:
+                    ELEGOO_JSON_DATA = json.loads(JSON_INPUT_ELEGOO) # parses string into a dictionary
+                    # {"L_motor":0,"R_motor":0,"distance":91,"S_angle":55,"time":25686}
+                    L_MRT_DATA = ELEGOO_JSON_DATA.get("L_motor", "N/A")
+                    R_MRT_DATA = ELEGOO_JSON_DATA.get("R_motor", "N/A")
+                    DIST_DATA = ELEGOO_JSON_DATA.get("distance", "N/A")
+                    SERVO_DATA = ELEGOO_JSON_DATA.get("S_angle", "N/A")
+                    TIME_DATA = ELEGOO_JSON_DATA.get("time", "N/A")
+                    LAST_LINE_ELEGOO_JSON = JSON_INPUT_ELEGOO # string. not a python dictionary
+                    
+                    # Print the json to the pi terminal locally to see mssg
+                    print_elegoo_json = json.dumps(LAST_LINE_ELEGOO_JSON)
+                    #print(print_elegoo_json)
 
                     # Ultrasonic sensor check
-                    if DIST_DATA >= 0 and isinstance(DIST_DATA, int):
+                    if  isinstance(DIST_DATA, int) and DIST_DATA >= 0:
                         if DIST_DATA < TURN_THRESHOLD:
                             if not TURNING:
                                 print("[PI] Obstacle detected — STARTING TURN")
                                 turn_cmd = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 100, "R_PWM": 0, "S_SWEEP": 1}
                                 PI_ELEGOO_PORT.write((json.dumps(turn_cmd) + '\n').encode('utf-8'))
-                                LAST_CMD_SENT_TO_ARDUINO = json.dumps(turn_cmd)
+                                LAST_CMD_SENT_TO_ELEGO = json.dumps(turn_cmd)
                                 LAST_CMD_TIME = CURRENT_TIME
                                 TURNING = True
                         else:
@@ -110,14 +137,14 @@ try:
                                 print("[PI] Path clear — RESUMING LAST CMD")
                                 if LAST_NON_TURN_CMD:
                                     PI_ELEGOO_PORT.write((json.dumps(LAST_NON_TURN_CMD) + '\n').encode('utf-8'))
-                                    LAST_CMD_SENT_TO_ARDUINO = LAST_NON_TURN_CMD
+                                    LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
                                     LAST_CMD_TIME = CURRENT_TIME
                                 TURNING = False
 
                 except json.JSONDecodeError:
-                    print(f"[ERROR] Bad JSON: {JSON_INPUT_ARDUINO} '\n")
+                    print(f"[ERROR] Bad JSON: {JSON_INPUT_ELEGOO} '\n")
 
-        # ------------------------------------------PI to ARDUINO---------------------------------------------------
+        # ------------------------------------------PI to ELEGOO---------------------------------------------------
         pi_read_socket, _, _ = select.select([mac_con], [], [], 0)
         if mac_con in pi_read_socket:
             try:
@@ -125,9 +152,9 @@ try:
                 mac_cmd = mac_con.recv(1024).decode('utf-8').strip()
                 if mac_cmd == "":
                     raise ConnectionResetError
-                #PI_ELEGOO_PORT.write((mac_cmd + '\n').encode('utf-8'))
+                
                 PI_ELEGOO_PORT.write((mac_cmd + '\n').encode('utf-8'))
-                LAST_CMD_SENT_TO_ARDUINO = mac_cmd
+                LAST_CMD_SENT_TO_ELEGO = mac_cmd
                 LAST_NON_TURN_CMD = mac_cmd
                 LAST_CMD_TIME = CURRENT_TIME
 
@@ -140,24 +167,58 @@ try:
                     if stream_video.poll() is None: # Check if it is still running
                         print("Stopping video stream")
                         stream_video.terminate()
-        # ------------------------------------------- PI to MAC------------------------------------------------
-        # Periodically send the Arduino data to the Mac for GUI display
-        if CURRENT_TIME - LAST_SENT >= 0.05:
-            mac_con.sendall((LAST_LINE_ARDUINO_JSON + '\n').encode('utf-8'))
-            LAST_SENT = CURRENT_TIME
 
-        # ---------------------------------------------------------------------------------------------
         # RESEND LAST CMD TO ARDUINO IF IDLE
-        if CURRENT_TIME - LAST_CMD_TIME > CMD_RESEND_INTERVAL:
-            if LAST_CMD_SENT_TO_ARDUINO:
-                PI_ELEGOO_PORT.write((LAST_CMD_SENT_TO_ARDUINO + '\n').encode('utf-8'))
+        if CURRENT_TIME - LAST_CMD_TIME > CMD_ELEGOO_RESEND_INTERVAL:
+            if LAST_CMD_SENT_TO_ELEGO:
+                PI_ELEGOO_PORT.write((LAST_CMD_SENT_TO_ELEGO + '\n').encode('utf-8'))
                 LAST_CMD_TIME = CURRENT_TIME
+
+        # ------------------------------------------- PI to MAC (nano) ------------------------------------------------
+        # Periodically send the Arduino data to the Mac for GUI display
+        if CURRENT_TIME - LAST_NANO_SENT >= TM_TIMING_NANO:
+
+            try:
+                # Parse json from Elegoo then slap the "source:elegoo" in front of the json to send to mac
+                NANO_DATA = json.loads(LAST_LINE_NANO_JSON)
+                # Reorder the json
+                NANO_DATA_UPDATE = OrderedDict()
+                NANO_DATA_UPDATE["source"] = "NANO" # first key
+                NANO_DATA_UPDATE.update(NANO_DATA)
+
+                mac_con.sendall((json.dumps(NANO_DATA_UPDATE) + '\n').encode('utf-8'))
+                print(f'NANO TO MAC: {NANO_DATA_UPDATE}')
+            except json.JSONDecodeError:
+                print("[ERROR] Failed to parse LAST_LINE_NANO_JSON to send")
+    
+            LAST_NANO_SENT = CURRENT_TIME
+
+        # ------------------------------------------- PI to MAC (elegoo) ------------------------------------------------
+        # Periodically send the Arduino data to the Mac for GUI display
+        if CURRENT_TIME - LAST_ELEGOO_SENT >= TM_TIMING_ELEGOO:
+
+            try:
+                # Parse json from Elegoo then slap the "source:elegoo" in front of the json to send to mac
+                ELEGOO_DATA = json.loads(LAST_LINE_ELEGOO_JSON)
+                # Reorder the json
+                ELEGOO_DATA_UPDATE = OrderedDict()
+                ELEGOO_DATA_UPDATE["source"] = "ELEGOO" # first key
+                ELEGOO_DATA_UPDATE.update(ELEGOO_DATA)
+                print(f'ELEGOO TO MAC: {ELEGOO_DATA_UPDATE}')
+                mac_con.sendall((json.dumps(ELEGOO_DATA_UPDATE) + '\n').encode('utf-8'))
+
+            except json.JSONDecodeError:
+                print("[ERROR] Failed to parse LAST_LINE_ELEGOO_JSON to send")
+    
+            LAST_ELEGOO_SENT = CURRENT_TIME
+
 
 except KeyboardInterrupt:
     print("\nShutting down.")
 
 finally:
     PI_ELEGOO_PORT.close()
+    PI_NANO_PORT.close()
     mac_con.close()
     pi_socket.close()
     if os.path.exists('/dev/video0'):

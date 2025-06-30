@@ -4,7 +4,11 @@ import select
 import json
 import subprocess
 # This will have the mac gui sending a json mssg to the pi for commands of each side of the motors
-# 6/29/2025, add servo angle to display
+# 6/29/2025
+# add servo angle to display
+# Add 2nd gui for the nano encoder for future plotting
+# add nano json reading
+# add json parsing of elegoo vs nano
 
 last_pi_data_json = ""
 ffplay_process = None
@@ -37,13 +41,22 @@ def check_pi_response():
             if pi_data_json and pi_data_json != last_pi_data_json:
                 try:
                     read_json_data = json.loads(pi_data_json)
-                    # {"L_motor":0,"R_motor":0,"distance":91,"S_angle":55,"time":25686}
-                    left_motor_pwm.set(f"Left Motor PWM: {read_json_data.get('L_motor', 'N/A')}")
-                    right_motor_pwm.set(f"Right Motor PWM: {read_json_data.get('R_motor', 'N/A')}")
-                    servo_angle.set(f"Servo: {read_json_data.get('S_angle', 'N/A')}")
-                    distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
-                    time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
-                    raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
+                    source = read_json_data.get("source", "UNKNOWN")
+                    if source == "ELEGOO":
+                        # {"L_motor":0,"R_motor":0,"distance":91,"S_angle":55,"time":25686}
+                        left_motor_pwm.set(f"Left Motor PWM: {read_json_data.get('L_motor', 'N/A')}")
+                        right_motor_pwm.set(f"Right Motor PWM: {read_json_data.get('R_motor', 'N/A')}")
+                        servo_angle.set(f"Servo: {read_json_data.get('S_angle', 'N/A')}")
+                        distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
+                        time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
+                        raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
+
+                    elif source == "NANO":
+                        left_motor_encoder.set(f"Left Encoder: {read_json_data.get('L_ENCD', 'N/A')}")
+                        right_motor_encoder.set(f"Right Encoder: {read_json_data.get('R_ENCD', 'N/A')}")
+                        lleft_motor_encoder.set(f"Left Encoder: {read_json_data.get('L_ENCD', 'N/A')}")
+                        rright_motor_encoder.set(f"Right Encoder: {read_json_data.get('R_ENCD', 'N/A')}")
+                        raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
                     last_pi_data_json = pi_data_json
 
@@ -55,73 +68,120 @@ def check_pi_response():
             rcv_status.set("Pi Status: Socket Error")
             print(f"[MAC ERROR] Socket error: {e}")
 
-    mac_host.after(100, check_pi_response)
+    control_gui.after(100, check_pi_response)
 
 # ------------------------  GUI SETUP ------------------------ #
 # First GUI for motor control
-mac_host = tk.Tk()
-mac_host.update_idletasks()  # force geometry info to update
-mac_host.title("Control GUI")
+control_gui = tk.Tk()
+control_gui.update_idletasks()  # force geometry info to update
+control_gui.title("Control GUI")
 
-gui1_window_width = 800
+gui1_window_width = 1000
 gui1_window_height = 500
-screen_width = mac_host.winfo_screenwidth()
-screen_height = mac_host.winfo_screenheight()
+screen_width = control_gui.winfo_screenwidth()
+screen_height = control_gui.winfo_screenheight()
 center_x = int(screen_width / 2 - gui1_window_width / 2)
 center_y = int(screen_height / 2 - gui1_window_height / 2)
-mac_host.geometry(f"{gui1_window_width}x{gui1_window_height}+{center_x}+{center_y}")
+control_gui.geometry(f"{gui1_window_width}x{gui1_window_height}+{center_x}+{center_y}")
+
+control_gui_title_label = tk.Label(
+    control_gui,
+    text="Elegoo Motor / Servo Encoder Telemetry",
+    font=("Helvetica", 20, "bold"),
+    bg="white",
+    fg="black"
+)
+control_gui_title_label.pack(pady=20)
 
 # 2nd GUI for plotting
-plot_host = tk.Tk()
-plot_host.title("Plot GUI")
+# ------------- Plotting GUI Setup (Fixed) -------------
+plot_gui = tk.Tk()
+plot_gui.title("Plot GUI")
+plot_gui.configure(bg="white")
+
 gui2_window_width = 800
 gui2_window_height = 500
-plot_host.geometry(f"{gui2_window_width}x{gui2_window_height}")
+plot_gui.geometry(f"{gui2_window_width}x{gui2_window_height}")
 
-# === TOP: Status labels ===
+# Optional: Add a title label for clarity
+plot_gui_title_label = tk.Label(
+    plot_gui,
+    text="NANO Encoder Telemetry",
+    font=("Helvetica", 20, "bold"),
+    bg="white",
+    fg="black"
+)
+plot_gui_title_label.pack(pady=20)
+
+# Left Encoder Label
+left_motor_encoder = tk.StringVar()
+left_motor_encoder_label = tk.Label(plot_gui, textvariable=left_motor_encoder)
+left_motor_encoder_label.pack(pady=10)
+left_motor_encoder.set("Left Encoder: ---")  # <- This forces text to appear at launch
+
+# Right Encoder Label
+right_motor_encoder = tk.StringVar()
+right_motor_encoder_label = tk.Label(plot_gui, textvariable=right_motor_encoder)
+right_motor_encoder_label.pack(pady=10)
+right_motor_encoder.set("Right Encoder: ---")  # <- Forces label to appear at launch
+
+
+# === Control GUI : Status labels ===
 # Pi Status
 rcv_status = tk.StringVar()
-rcv_label = tk.Label(mac_host, textvariable=rcv_status)
+rcv_label = tk.Label(control_gui, textvariable=rcv_status)
 rcv_label.pack(pady=10)
 rcv_status.set("Pi Status: ")
 
 # Mac send Status
 mac_sent_status = tk.StringVar()
-mac_sent_label = tk.Label(mac_host, textvariable=mac_sent_status)
+mac_sent_label = tk.Label(control_gui, textvariable=mac_sent_status)
 mac_sent_label.pack(pady=5)
 mac_sent_status.set("Mac Mac Send Status: ")
 
 # Arduino message received
 raw_json_rcvd_status = tk.StringVar()
-raw_json_rcvd_status_label = tk.Label(mac_host, textvariable=raw_json_rcvd_status)
+raw_json_rcvd_status_label = tk.Label(control_gui, textvariable=raw_json_rcvd_status)
 raw_json_rcvd_status_label.pack(pady=5)
 raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
 
+# Left Encoder Label
+lleft_motor_encoder = tk.StringVar()
+lleft_motor_encoder_label = tk.Label(control_gui, textvariable=lleft_motor_encoder)
+lleft_motor_encoder_label.pack(pady=10)
+lleft_motor_encoder.set("Left Encoder: ---")  # <- This forces text to appear at launch
+
+# Right Encoder Label
+rright_motor_encoder = tk.StringVar()
+rright_motor_encoder_label = tk.Label(control_gui, textvariable=rright_motor_encoder)
+rright_motor_encoder_label.pack(pady=10)
+rright_motor_encoder.set("Right Encoder: ---")  # <- Forces label to appear at launch
+
 # Servo Angle
 servo_angle = tk.StringVar()
-servo_label = tk.Label(mac_host, textvariable=servo_angle)
+servo_label = tk.Label(control_gui, textvariable=servo_angle)
 servo_label.pack()
 
 # Motor PWM speeds
 left_motor_pwm = tk.StringVar()
-left_motor_pwm_label = tk.Label(mac_host, textvariable=left_motor_pwm)
+left_motor_pwm_label = tk.Label(control_gui, textvariable=left_motor_pwm)
 left_motor_pwm_label.pack()
 
 right_motor_pwm = tk.StringVar()
-right_motor_pwm_label = tk.Label(mac_host, textvariable=right_motor_pwm)
+right_motor_pwm_label = tk.Label(control_gui, textvariable=right_motor_pwm)
 right_motor_pwm_label.pack()
 
 # Ultrasonic
 distance_status = tk.StringVar()
-distance_label = tk.Label(mac_host, textvariable=distance_status)
+distance_label = tk.Label(control_gui, textvariable=distance_status)
 distance_label.pack()
 
 time_status = tk.StringVar()
-time_label = tk.Label(mac_host, textvariable=time_status)
+time_label = tk.Label(control_gui, textvariable=time_status)
 time_label.pack()
 
 # === BOTTOM: Button row container ===
-button_frame = tk.Frame(mac_host)
+button_frame = tk.Frame(control_gui)
 button_frame.pack(pady=10)
 
 # LEFT column — motor buttons
@@ -203,7 +263,8 @@ def exit_gui():
     global ffplay_process
     print("[MAC] Closing GUI")
     close_video_stream(ffplay_process)
-    mac_host.destroy()
+    control_gui.destroy()
+    plot_gui.destroy()
 
 def launch_video():
     return subprocess.Popen([
@@ -296,5 +357,4 @@ exit_button.pack(pady=5)
 
 # ------------------------  START GUI ------------------------ #
 check_pi_response()
-mac_host.mainloop()
-plot_host.mainloop()
+tk.mainloop() # runs all guis
