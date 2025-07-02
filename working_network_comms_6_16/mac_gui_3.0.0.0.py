@@ -49,19 +49,17 @@ def check_pi_response():
                         servo_angle.set(f"Servo: {read_json_data.get('S_angle', 'N/A')}")
                         distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
                         time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
-                        raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
+                        elegoo_raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
                     elif source == "NANO":
                         left_motor_encoder.set(f"Left Encoder: {read_json_data.get('L_ENCD', 'N/A')}")
                         right_motor_encoder.set(f"Right Encoder: {read_json_data.get('R_ENCD', 'N/A')}")
-                        lleft_motor_encoder.set(f"Left Encoder: {read_json_data.get('L_ENCD', 'N/A')}")
-                        rright_motor_encoder.set(f"Right Encoder: {read_json_data.get('R_ENCD', 'N/A')}")
-                        raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
+                        nano_raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
                     last_pi_data_json = pi_data_json
 
                 except json.JSONDecodeError:
-                    rcv_status.set(f"Pi Status: ERROR - Bad JSON")
+                    rcv_status.set("Pi Status: ERROR - Bad JSON")
                     print(f"[MAC ERROR] Bad JSON: {pi_data_json}")
 
         except Exception as e:
@@ -138,11 +136,17 @@ mac_sent_label = tk.Label(control_gui, textvariable=mac_sent_status)
 mac_sent_label.pack(pady=5)
 mac_sent_status.set("Mac Mac Send Status: ")
 
-# Arduino message received
-raw_json_rcvd_status = tk.StringVar()
-raw_json_rcvd_status_label = tk.Label(control_gui, textvariable=raw_json_rcvd_status)
-raw_json_rcvd_status_label.pack(pady=5)
-raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
+# Elegoo Arduino message received
+elegoo_raw_json_rcvd_status = tk.StringVar()
+elegoo_raw_json_rcvd_status_label = tk.Label(control_gui, textvariable=elegoo_raw_json_rcvd_status)
+elegoo_raw_json_rcvd_status_label.pack(pady=5)
+elegoo_raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
+
+# Nano Arduino message received
+nano_raw_json_rcvd_status = tk.StringVar()
+nano_raw_json_rcvd_status_label = tk.Label(control_gui, textvariable=nano_raw_json_rcvd_status)
+nano_raw_json_rcvd_status_label.pack(pady=5)
+nano_raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
 
 # Servo Angle
 servo_angle = tk.StringVar()
@@ -247,7 +251,6 @@ def s_button(): # Stop
 
 # ============= DEFINE OTHER BUTTONS ================ 
 def exit_gui():
-    global ffplay_process
     print("[MAC] Closing GUI")
     close_video_stream(ffplay_process)
     control_gui.destroy()
@@ -296,7 +299,7 @@ def send_motor_command():
 user_pwm=tk.StringVar()
     
 pwm_label = tk.Label(mid_frame, text='PWM % (0 --> 100%)', font=('calibre',10, 'bold'))
-pwm_entry = tk.Entry(mid_frame,textvariable = user_pwm, font=('calibre',10,'normal'))
+pwm_entry = tk.Entry(mid_frame,textvariable = user_pwm, font=('calibre', 10, 'normal'))
 pwm_label.pack(pady=2)
 pwm_entry.pack(pady=2)
 
@@ -344,4 +347,4 @@ exit_button.pack(pady=5)
 
 # ------------------------  START GUI ------------------------ #
 check_pi_response()
-tk.mainloop() # runs all guis
+tk.mainloop()

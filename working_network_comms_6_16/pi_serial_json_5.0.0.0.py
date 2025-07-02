@@ -5,6 +5,8 @@
 # 6/29/2025 
 # change json to include servo
 # have explicity elegoo vs nano ports and commands
+# 7/1/2025 
+# add turn logic if sense left, turn right
 
 import time
 import socket
@@ -21,6 +23,8 @@ time.sleep(2)
 
 # ----- Global Variables ---- #
 STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0, "S_SWEEP": 0}
+LEFT_TURN = {"L_DIR": 0, "R_DIR": 1, "L_PWM": 50, "R_PWM": 75, "S_SWEEP": 0}
+RIGHT_TURN = {"L_DIR": 1, "R_DIR": 0, "L_PWM": 75, "R_PWM": 50, "S_SWEEP": 0}
 LAST_CMD_SENT_TO_ELEGO = json.dumps(STOP_JSON)
 LAST_NON_TURN_CMD =  json.dumps(STOP_JSON)
 LAST_LINE_ELEGOO_JSON = ""
@@ -30,6 +34,8 @@ LAST_ELEGOO_SENT = 0
 LAST_NANO_SENT = 0
 TURNING = False
 TURN_THRESHOLD = 15  # cm
+SERVO_LEFT = 91 
+SERVO_RIGHT = 90 # 0-90 deg = facing right
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 TM_TIMING_NANO = 0.200 # seconds
 TM_TIMING_ELEGOO = 0.05 # seconds
@@ -47,6 +53,7 @@ print(f"(1) Connected to ELEGOO at {ELEGOO_PORT}")
 PI_ELEGOO_PORT = serial.Serial(port=ELEGOO_PORT, baudrate=115200, timeout=1)
 time.sleep(2)
 PI_ELEGOO_PORT.write((json.dumps(STOP_JSON) + '\n').encode('utf-8'))
+PI_ELEGOO_PORT.reset_input_buffer()
 
 # Check for Arduino Nano connection
 while not os.path.exists(NANO_PORT):
@@ -56,6 +63,7 @@ while not os.path.exists(NANO_PORT):
 print(f"(1) Connected to NANO at {NANO_PORT}")
 PI_NANO_PORT = serial.Serial(port=NANO_PORT, baudrate=115200, timeout=1)
 time.sleep(2)
+PI_NANO_PORT.reset_input_buffer() # Fllush serial port
 
 # ====================== TCP Setup ==============================================================================================================
 HOST = ''
@@ -65,7 +73,7 @@ pi_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 pi_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 pi_socket.bind((HOST, PORT))
 pi_socket.listen(1)
-print(f"(3) Start the Macbook side of things please")
+print("(3) Start the Macbook side of things please")
 
 mac_con, mac_addr = pi_socket.accept()
 mac_con.setblocking(False)
@@ -98,7 +106,7 @@ try:
                     
                     # Print the json to the pi terminal locally to see mssg
                     print_nano_json = json.dumps(LAST_LINE_NANO_JSON)
-                    #print(print_nano_json)
+
 
                 except json.JSONDecodeError:
                     print(f"[ERROR] Bad JSON: {JSON_INPUT_NANO} '\n")
@@ -117,34 +125,41 @@ try:
                     SERVO_DATA = ELEGOO_JSON_DATA.get("S_angle", "N/A")
                     TIME_DATA = ELEGOO_JSON_DATA.get("time", "N/A")
                     LAST_LINE_ELEGOO_JSON = JSON_INPUT_ELEGOO # string. not a python dictionary
-                    
+
                     # Print the json to the pi terminal locally to see mssg
                     print_elegoo_json = json.dumps(LAST_LINE_ELEGOO_JSON)
-                    #print(print_elegoo_json)
 
                     # Ultrasonic sensor check
-                    if  isinstance(DIST_DATA, int) and DIST_DATA >= 0:
+                    if isinstance(DIST_DATA, int) and DIST_DATA >= 0 and isinstance(SERVO_DATA, int):
                         if DIST_DATA < TURN_THRESHOLD:
-                            if not TURNING:
-                                print("[PI] Obstacle detected — STARTING TURN")
-                                turn_cmd = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 100, "R_PWM": 0, "S_SWEEP": 1}
-                                PI_ELEGOO_PORT.write((json.dumps(turn_cmd) + '\n').encode('utf-8'))
-                                LAST_CMD_SENT_TO_ELEGO = json.dumps(turn_cmd)
-                                LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = True
+                            if SERVO_DATA <= SERVO_RIGHT:
+                                if not TURNING:
+                                    print("[PI] RIGHT OBSTACLE | TURN LEFT")
+                                    PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
+                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
+                                    LAST_CMD_TIME = CURRENT_TIME
+                                    TURNING = True
+
+                            elif SERVO_DATA >= SERVO_LEFT:
+                                if not TURNING:
+                                    print("[PI] LEFT OBSTACLE | TURN RIGHT")
+                                    PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
+                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(RIGHT_TURN)
+                                    LAST_CMD_TIME = CURRENT_TIME
+                                    TURNING = True
                         else:
                             if TURNING:
-                                print("[PI] Path clear — RESUMING LAST CMD")
+                                print("[PI] RESUME LAST COMMAND")
                                 if LAST_NON_TURN_CMD:
                                     PI_ELEGOO_PORT.write((json.dumps(LAST_NON_TURN_CMD) + '\n').encode('utf-8'))
                                     LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
                                     LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = False
+                                TURNING = False                                
 
                 except json.JSONDecodeError:
                     print(f"[ERROR] Bad JSON: {JSON_INPUT_ELEGOO} '\n")
 
-        # ------------------------------------------PI to ELEGOO---------------------------------------------------
+        # ------------------------------------------MAC to PI to ELEGOO---------------------------------------------------
         pi_read_socket, _, _ = select.select([mac_con], [], [], 0)
         if mac_con in pi_read_socket:
             try:
