@@ -99,9 +99,9 @@ try:
                 try:
                     NANO_JSON_DATA = json.loads(JSON_INPUT_NANO) # parses string into a dictionary
                     # {"L_ENCD":0,"R_ENCD":0,"time":0}
+                    NANO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
                     L_ENCD = NANO_JSON_DATA.get("L_ENCD", "N/A")
                     R_ENCD = NANO_JSON_DATA.get("R_ENCD", "N/A")
-                    TIME_DATA = NANO_JSON_DATA.get("time", "N/A")
                     LAST_LINE_NANO_JSON = JSON_INPUT_NANO # string. not a python dictionary
                     
                     # Print the json to the pi terminal locally to see mssg
@@ -119,11 +119,11 @@ try:
                 try:
                     ELEGOO_JSON_DATA = json.loads(JSON_INPUT_ELEGOO) # parses string into a dictionary
                     # {"L_motor":0,"R_motor":0,"distance":91,"S_angle":55,"time":25686}
+                    ELEGOO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
                     L_MRT_DATA = ELEGOO_JSON_DATA.get("L_motor", "N/A")
                     R_MRT_DATA = ELEGOO_JSON_DATA.get("R_motor", "N/A")
                     DIST_DATA = ELEGOO_JSON_DATA.get("distance", "N/A")
                     SERVO_DATA = ELEGOO_JSON_DATA.get("S_angle", "N/A")
-                    TIME_DATA = ELEGOO_JSON_DATA.get("time", "N/A")
                     LAST_LINE_ELEGOO_JSON = JSON_INPUT_ELEGOO # string. not a python dictionary
 
                     # Print the json to the pi terminal locally to see mssg
@@ -199,8 +199,8 @@ try:
                 # Reorder the json
                 NANO_DATA_UPDATE = OrderedDict()
                 NANO_DATA_UPDATE["source"] = "NANO" # first key
+                NANO_DATA_UPDATE["time"] = time.time() # 2nd key
                 NANO_DATA_UPDATE.update(NANO_DATA)
-
                 mac_con.sendall((json.dumps(NANO_DATA_UPDATE) + '\n').encode('utf-8'))
                 print(f'NANO TO MAC: {NANO_DATA_UPDATE}')
             except json.JSONDecodeError:
@@ -218,6 +218,7 @@ try:
                 # Reorder the json
                 ELEGOO_DATA_UPDATE = OrderedDict()
                 ELEGOO_DATA_UPDATE["source"] = "ELEGOO" # first key
+                ELEGOO_DATA_UPDATE["time"] = time.time() # first key
                 ELEGOO_DATA_UPDATE.update(ELEGOO_DATA)
                 print(f'ELEGOO TO MAC: {ELEGOO_DATA_UPDATE}')
                 mac_con.sendall((json.dumps(ELEGOO_DATA_UPDATE) + '\n').encode('utf-8'))

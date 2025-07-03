@@ -14,6 +14,12 @@ private:
   int _current_R_PWM = 0;
   int _current_L_DIR = 0;
   int _current_R_DIR = 0;
+  
+  // Initial motor values
+  int left_motor_direction = 0;
+  int right_motor_direction = 0;
+  int left_motor_pwm = 0;
+  int right_motor_pwm = 0;
 
 
 public:

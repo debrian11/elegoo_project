@@ -19,6 +19,9 @@ void MotorController::begin() {
   pinMode(_R_MTR_PWM_PIN, OUTPUT);
   pinMode(_STBY_PIN, OUTPUT);
   digitalWrite(_STBY_PIN, HIGH);
+
+
+  
 }
 
 

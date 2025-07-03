@@ -23,25 +23,16 @@ MotorController motor(left_motor_direction_pin, right_motor_direction_pin,
 
 // Serial comms setup
 SerialCommandHandler serialHandler(motor); // Grabs serial 
-
-// Create objects:
 UltrasonicSensor ultrasonic(13, 12); // (trig / echo)
 OutputPrinter serial_printer(50);  // Print every x-ms
 
 // Servo Setup:
 int servo_pin = 11;
 int servo_sweep_status = 0;
-int current_angle;
 Servo_custom servo1(servo_pin);
 
 unsigned long current_time;
-float distance_in = 10;
-
-// Initial Motor Stuff
-int left_motor_direction = 0;
-int right_motor_direction = 0;
-int left_motor_pwm = 0;
-int right_motor_pwm = 0;
+float distance_in;
 
 void setup() {
   Serial.begin(115200);
@@ -63,6 +54,5 @@ void loop() {
   servo1.servo_custom_sweep(servo_sweep_status);
 
   // Output the motor speed and Ultrasonic distance back
-  //serial_printer.json_print(distance_in, left_motor_pwm, right_motor_pwm, cu,current_time);
   serial_printer.json_print(distance_in, motor, servo1, current_time);
 }

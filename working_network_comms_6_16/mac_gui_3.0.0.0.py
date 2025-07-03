@@ -36,7 +36,6 @@ def check_pi_response():
     if mac_socket in read_socket:
         try:
             pi_data_json = mac_socket.recv(1024).decode().strip().split('\n')[0]
-            rcv_status.set("Pi Status: Connected")
 
             if pi_data_json and pi_data_json != last_pi_data_json:
                 try:
@@ -44,26 +43,27 @@ def check_pi_response():
                     source = read_json_data.get("source", "UNKNOWN")
                     if source == "ELEGOO":
                         # {"L_motor":0,"R_motor":0,"distance":91,"S_angle":55,"time":25686}
+                        elegoo_mssg_id.set(f"Messge ID: {read_json_data.get('mssg_id', 'N/A')}")
                         left_motor_pwm.set(f"Left Motor PWM: {read_json_data.get('L_motor', 'N/A')}")
                         right_motor_pwm.set(f"Right Motor PWM: {read_json_data.get('R_motor', 'N/A')}")
                         servo_angle.set(f"Servo: {read_json_data.get('S_angle', 'N/A')}")
                         distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
-                        time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
+                        elegoo_time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
                         elegoo_raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
                     elif source == "NANO":
+                        nano_mssg_id.set(f"Messge ID: {read_json_data.get('mssg_id', 'N/A')}")
                         left_motor_encoder.set(f"Left Encoder: {read_json_data.get('L_ENCD', 'N/A')}")
                         right_motor_encoder.set(f"Right Encoder: {read_json_data.get('R_ENCD', 'N/A')}")
+                        nano_time_status.set(f"Time: {read_json_data.get('time', 'N/A')} ")
                         nano_raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
                     last_pi_data_json = pi_data_json
 
                 except json.JSONDecodeError:
-                    rcv_status.set("Pi Status: ERROR - Bad JSON")
                     print(f"[MAC ERROR] Bad JSON: {pi_data_json}")
 
         except Exception as e:
-            rcv_status.set("Pi Status: Socket Error")
             print(f"[MAC ERROR] Socket error: {e}")
 
     control_gui.after(100, check_pi_response)
@@ -122,13 +122,19 @@ right_motor_encoder_label = tk.Label(plot_gui, textvariable=right_motor_encoder)
 right_motor_encoder_label.pack(pady=10)
 right_motor_encoder.set("Right Encoder: ---")  # <- Forces label to appear at launch
 
+nano_time_status = tk.StringVar()
+nano_time_label = tk.Label(plot_gui, textvariable=nano_time_status)
+nano_time_label.pack()
+
+nano_mssg_id = tk.StringVar()
+nano_mssg_id_label = tk.Label(plot_gui, textvariable=nano_mssg_id)
+nano_mssg_id_label.pack()
+
+elegoo_mssg_id = tk.StringVar()
+elegoo_mssg_id_label = tk.Label(control_gui, textvariable=elegoo_mssg_id)
+elegoo_mssg_id_label.pack()
 
 # === Control GUI : Status labels ===
-# Pi Status
-rcv_status = tk.StringVar()
-rcv_label = tk.Label(control_gui, textvariable=rcv_status)
-rcv_label.pack(pady=10)
-rcv_status.set("Pi Status: ")
 
 # Mac send Status
 mac_sent_status = tk.StringVar()
@@ -144,7 +150,7 @@ elegoo_raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
 
 # Nano Arduino message received
 nano_raw_json_rcvd_status = tk.StringVar()
-nano_raw_json_rcvd_status_label = tk.Label(control_gui, textvariable=nano_raw_json_rcvd_status)
+nano_raw_json_rcvd_status_label = tk.Label(plot_gui, textvariable=nano_raw_json_rcvd_status)
 nano_raw_json_rcvd_status_label.pack(pady=5)
 nano_raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
 
@@ -167,9 +173,9 @@ distance_status = tk.StringVar()
 distance_label = tk.Label(control_gui, textvariable=distance_status)
 distance_label.pack()
 
-time_status = tk.StringVar()
-time_label = tk.Label(control_gui, textvariable=time_status)
-time_label.pack()
+elegoo_time_status = tk.StringVar()
+elegoo_time_label = tk.Label(control_gui, textvariable=elegoo_time_status)
+elegoo_time_label.pack()
 
 # === BOTTOM: Button row container ===
 button_frame = tk.Frame(control_gui)

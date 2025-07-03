@@ -14,6 +14,8 @@ public:
   OutputPrinter(unsigned long updateInterval = 500)
     : lastPrintTime(0), interval(updateInterval) {}
 
+  int mssg_id;
+
   void json_print(int distance_in, MotorController &motor, Servo_custom &servo, unsigned long current_time);
 };
 

@@ -13,6 +13,7 @@ public:
     : lastPrintTime(0), interval(updateInterval) {}
 
   void json_print(int &left_encoder, int &right_encoder, unsigned long current_time);
+  int mssg_id = 0;
 };
 
 #endif
