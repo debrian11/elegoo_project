@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include "Motorcontroller.h"
-#include "Servo_custom.h"
 
 class OutputPrinter {
 private:
@@ -16,7 +15,7 @@ public:
 
   int mssg_id;
 
-  void json_print(int distance_in, MotorController &motor, Servo_custom &servo, unsigned long current_time);
+  void json_print(MotorController &motor, unsigned long current_time);
 };
 
 #endif

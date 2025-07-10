@@ -12,8 +12,10 @@ public:
   OutputPrinter(unsigned long updateInterval = 500)
     : lastPrintTime(0), interval(updateInterval) {}
 
-  void json_print(int left_encoder, int right_encoder, unsigned long current_time);
   int mssg_id = 0;
+
+  void json_print(int front_sensor, int left_sensor, int right_sensor, 
+                  int left_encoder, int right_encoder, unsigned long current_time);
 };
 
 #endif

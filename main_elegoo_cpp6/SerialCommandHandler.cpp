@@ -5,9 +5,8 @@
 
 String arduino_input_buffer = "";  // Accumulate chars into a full JSON string
 unsigned long last_pi_time = 0;
-int SERVO_SWEEP_STATUS = 0;
 
-bool SerialCommandHandler::getCommand_json(int &SERVO_SWEEP_STATUS) {
+bool SerialCommandHandler::getCommand_json() {
 
   if (Serial.available()) { 
     char c = Serial.read(); 
@@ -28,8 +27,7 @@ bool SerialCommandHandler::getCommand_json(int &SERVO_SWEEP_STATUS) {
       int R_MTR_PWM = pi_json_inc["R_PWM"];
       int L_MTR_DIR = (pi_json_inc["L_DIR"] == 0) ? LOW : HIGH; // (condition) ? (value_if_true) : (value_if_false);
       int R_MTR_DIR = (pi_json_inc["R_DIR"] == 0) ? LOW : HIGH;
-      
-      SERVO_SWEEP_STATUS = pi_json_inc["S_SWEEP"];
+    
 
       // === Apply motor control directly ===
       _motor_object.drive(L_MTR_PWM, R_MTR_PWM,

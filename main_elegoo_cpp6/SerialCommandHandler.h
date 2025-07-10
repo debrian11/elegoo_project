@@ -15,7 +15,7 @@ public:
   SerialCommandHandler(MotorController &motor_object) : _motor_object(motor_object){}
 
   //bool getCommand_json(int &L_MTR_DIR, int &R_MTR_DIR, int &L_MTR_PWM, int &R_MTR_PWM);
-  bool getCommand_json(int &SERVO_SWEEP_STATUS); 
+  bool getCommand_json(); 
 };
 
 #endif
