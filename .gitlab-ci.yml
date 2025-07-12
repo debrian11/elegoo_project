@@ -1,26 +1,3 @@
-<<<<<<< HEAD
-=======
-# 7/11/2025 Initial method of creating container with the docker file
->>>>>>> gitlab/main
-stages:
-  - build
-
-variables:
-  DOCKER_IMAGE: registry.gitlab.com/debrian11-group/pi-arduino-bot/container_bot
-  TAG: "1.0"
-
-build_container:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-  script:
-    - docker build -t $DOCKER_IMAGE:$TAG DockerFile/
-    - docker push $DOCKER_IMAGE:$TAG
-<<<<<<< HEAD
-
 # 7/11/2025 Initial method of creating container with the docker file
 stages:
   - build
@@ -37,7 +14,5 @@ build_container:
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    - docker build -t $DOCKER_IMAGE:$TAG -f Docker/DockerFile .
+    - docker build -t $DOCKER_IMAGE:$TAG -f Docker/DockerFile
     - docker push $DOCKER_IMAGE:$TAG
-=======
->>>>>>> gitlab/main
