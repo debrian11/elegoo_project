@@ -1,3 +1,4 @@
+# 7/11/2025 Initial method of creating container with the docker file
 stages:
   - build
 
