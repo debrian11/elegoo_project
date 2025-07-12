@@ -42,10 +42,12 @@ ARDUINO_JSON_ELEGOO = {
     "L_motor": 75,
     "R_motor": 60,
     "distance": 96,
-    "S_angle": 40
 }
 ARDUINO_JSON_NANO = {
     "mssg_id": 1000,
+    "F_USS" : 50,
+    "L_USS" : 60,
+    "R_USS" : 70,
     "L_ENCD": 6000,
     "R_ENCD": 5900
 }

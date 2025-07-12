@@ -7,6 +7,7 @@
 # have explicity elegoo vs nano ports and commands
 # 7/1/2025 
 # add turn logic if sense left, turn right
+# 7/10/2025, removed servo
 
 import time
 import socket
@@ -20,11 +21,11 @@ from collections import OrderedDict
 
 print("Starting PI_SERIAL stuff shortly!!")
 time.sleep(2)
-
+# 
 # ----- Global Variables ---- #
-STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0, "S_SWEEP": 0}
-LEFT_TURN = {"L_DIR": 0, "R_DIR": 1, "L_PWM": 50, "R_PWM": 75, "S_SWEEP": 0}
-RIGHT_TURN = {"L_DIR": 1, "R_DIR": 0, "L_PWM": 75, "R_PWM": 50, "S_SWEEP": 0}
+STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0}
+LEFT_TURN = {"L_DIR": 0, "R_DIR": 1, "L_PWM": 50, "R_PWM": 75}
+RIGHT_TURN = {"L_DIR": 1, "R_DIR": 0, "L_PWM": 75, "R_PWM": 50}
 LAST_CMD_SENT_TO_ELEGO = json.dumps(STOP_JSON)
 LAST_NON_TURN_CMD =  json.dumps(STOP_JSON)
 LAST_LINE_ELEGOO_JSON = ""
@@ -34,8 +35,6 @@ LAST_ELEGOO_SENT = 0
 LAST_NANO_SENT = 0
 TURNING = False
 TURN_THRESHOLD = 15  # cm
-SERVO_LEFT = 91 
-SERVO_RIGHT = 90 # 0-90 deg = facing right
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 TM_TIMING_NANO = 0.200 # seconds
 TM_TIMING_ELEGOO = 0.05 # seconds
@@ -98,7 +97,7 @@ try:
             if JSON_INPUT_NANO:
                 try:
                     NANO_JSON_DATA = json.loads(JSON_INPUT_NANO) # parses string into a dictionary
-                    # {"L_ENCD":0,"R_ENCD":0,"time":0}
+                    # {"mssg_id":993,"F_USS":12,"L_USS":16,"R_USS":89,"L_ENCD":315,"R_ENCD":52}
                     NANO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
                     L_ENCD = NANO_JSON_DATA.get("L_ENCD", "N/A")
                     R_ENCD = NANO_JSON_DATA.get("R_ENCD", "N/A")
@@ -106,28 +105,6 @@ try:
                     
                     # Print the json to the pi terminal locally to see mssg
                     print_nano_json = json.dumps(LAST_LINE_NANO_JSON)
-
-
-                except json.JSONDecodeError:
-                    print(f"[ERROR] Bad JSON: {JSON_INPUT_NANO} '\n")
-
-        # -----------------------------------------ELEGOO to PI----------------------------------------------------
-        if PI_ELEGOO_PORT.in_waiting:
-            JSON_INPUT_ELEGOO = PI_ELEGOO_PORT.readline().decode('utf-8', errors='ignore').strip() # Arduino string that looks like a json
-            
-            if JSON_INPUT_ELEGOO:
-                try:
-                    ELEGOO_JSON_DATA = json.loads(JSON_INPUT_ELEGOO) # parses string into a dictionary
-                    # {"L_motor":0,"R_motor":0,"distance":91,"S_angle":55,"time":25686}
-                    ELEGOO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
-                    L_MRT_DATA = ELEGOO_JSON_DATA.get("L_motor", "N/A")
-                    R_MRT_DATA = ELEGOO_JSON_DATA.get("R_motor", "N/A")
-                    DIST_DATA = ELEGOO_JSON_DATA.get("distance", "N/A")
-                    SERVO_DATA = ELEGOO_JSON_DATA.get("S_angle", "N/A")
-                    LAST_LINE_ELEGOO_JSON = JSON_INPUT_ELEGOO # string. not a python dictionary
-
-                    # Print the json to the pi terminal locally to see mssg
-                    print_elegoo_json = json.dumps(LAST_LINE_ELEGOO_JSON)
 
                     # Ultrasonic sensor check
                     if isinstance(DIST_DATA, int) and DIST_DATA >= 0 and isinstance(SERVO_DATA, int):
@@ -154,7 +131,27 @@ try:
                                     PI_ELEGOO_PORT.write((json.dumps(LAST_NON_TURN_CMD) + '\n').encode('utf-8'))
                                     LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
                                     LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = False                                
+                                TURNING = False  
+
+
+                except json.JSONDecodeError:
+                    print(f"[ERROR] Bad JSON: {JSON_INPUT_NANO} '\n")
+
+        # -----------------------------------------ELEGOO to PI----------------------------------------------------
+        if PI_ELEGOO_PORT.in_waiting:
+            JSON_INPUT_ELEGOO = PI_ELEGOO_PORT.readline().decode('utf-8', errors='ignore').strip() # Arduino string that looks like a json
+            
+            if JSON_INPUT_ELEGOO:
+                try:
+                    ELEGOO_JSON_DATA = json.loads(JSON_INPUT_ELEGOO) # parses string into a dictionary
+                    # {"mssg_id":106,"L_motor":0,"R_motor":0}
+                    ELEGOO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
+                    L_MRT_DATA = ELEGOO_JSON_DATA.get("L_motor", "N/A")
+                    R_MRT_DATA = ELEGOO_JSON_DATA.get("R_motor", "N/A")
+                    LAST_LINE_ELEGOO_JSON = JSON_INPUT_ELEGOO # string. not a python dictionary
+
+                    # Print the json to the pi terminal locally to see mssg
+                    print_elegoo_json = json.dumps(LAST_LINE_ELEGOO_JSON)                              
 
                 except json.JSONDecodeError:
                     print(f"[ERROR] Bad JSON: {JSON_INPUT_ELEGOO} '\n")

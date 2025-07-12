@@ -9,12 +9,13 @@ import subprocess
 # Add 2nd gui for the nano encoder for future plotting
 # add nano json reading
 # add json parsing of elegoo vs nano
+# 7/10/2025
+# removed servo references
 
 last_pi_data_json = ""
 ffplay_process = None
 
 # Store default values for motor and servo
-servo_sweep_status = 0
 last_left_mult = 0.0
 last_right_mult = 0.0
 last_left_dir = 1
@@ -46,8 +47,6 @@ def check_pi_response():
                         elegoo_mssg_id.set(f"Messge ID: {read_json_data.get('mssg_id', 'N/A')}")
                         left_motor_pwm.set(f"Left Motor PWM: {read_json_data.get('L_motor', 'N/A')}")
                         right_motor_pwm.set(f"Right Motor PWM: {read_json_data.get('R_motor', 'N/A')}")
-                        servo_angle.set(f"Servo: {read_json_data.get('S_angle', 'N/A')}")
-                        distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
                         elegoo_time_status.set(f"Time: {read_json_data.get('time', 'N/A')}")
                         elegoo_raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
@@ -55,6 +54,7 @@ def check_pi_response():
                         nano_mssg_id.set(f"Messge ID: {read_json_data.get('mssg_id', 'N/A')}")
                         left_motor_encoder.set(f"Left Encoder: {read_json_data.get('L_ENCD', 'N/A')}")
                         right_motor_encoder.set(f"Right Encoder: {read_json_data.get('R_ENCD', 'N/A')}")
+                        distance_status.set(f"Distance: {read_json_data.get('distance', 'N/A')}")
                         nano_time_status.set(f"Time: {read_json_data.get('time', 'N/A')} ")
                         nano_raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
@@ -84,7 +84,7 @@ control_gui.geometry(f"{gui1_window_width}x{gui1_window_height}+{center_x}+{cent
 
 control_gui_title_label = tk.Label(
     control_gui,
-    text="Elegoo Motor / Servo Telemetry",
+    text="Elegoo Motor Telemetry",
     font=("Helvetica", 20, "bold"),
     bg="white",
     fg="black"
@@ -154,10 +154,6 @@ nano_raw_json_rcvd_status_label = tk.Label(plot_gui, textvariable=nano_raw_json_
 nano_raw_json_rcvd_status_label.pack(pady=5)
 nano_raw_json_rcvd_status.set("Raw Arduino Recvd Data: ")
 
-# Servo Angle
-servo_angle = tk.StringVar()
-servo_label = tk.Label(control_gui, textvariable=servo_angle)
-servo_label.pack()
 
 # Motor PWM speeds
 left_motor_pwm = tk.StringVar()
@@ -201,7 +197,7 @@ def b_button(): # Back
     last_left_dir = 0
     last_right_dir = 0
 
-    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir, servo_sweep_status)
+    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status: back | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
@@ -213,7 +209,7 @@ def f_button(): # Forward
     last_left_dir = 1
     last_right_dir = 1
 
-    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir, servo_sweep_status)
+    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status:  fwd | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
@@ -225,7 +221,7 @@ def r_button(): # Right
     last_left_dir = 1
     last_right_dir = 1
 
-    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir, servo_sweep_status)
+    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status: right | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
@@ -237,20 +233,19 @@ def l_button(): # Left
     last_left_dir = 1
     last_right_dir = 1
 
-    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir, servo_sweep_status)
+    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status: left | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
 
 def s_button(): # Stop
-    global last_left_mult, last_right_mult, last_left_dir, last_right_dir, servo_sweep_status
+    global last_left_mult, last_right_mult, last_left_dir, last_right_dir
     last_left_mult = 0.0
     last_right_mult = 0.0
     last_left_dir = 1
     last_right_dir = 1
-    servo_sweep_status = 0
 
-    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir, servo_sweep_status)
+    mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status: stop | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
@@ -284,19 +279,8 @@ def stop_video_wrapper():
         close_video_stream(ffplay_process)
         ffplay_process = None
 
-# ============= DEFINE SERVO BUTTONS ================ 
-def servo_sweep_on_button(): 
-    global servo_sweep_status
-    servo_sweep_status = 1
-    send_motor_command()  # Force-send a stop with S_SWEEP=1
-
-def servo_sweep_off_button():
-    global servo_sweep_status
-    servo_sweep_status = 0
-    send_motor_command()  # Force-send a stop with S_SWEEP=0
-
 def send_motor_command():
-    json_cmd = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir, servo_sweep_status)
+    json_cmd = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
     mac_socket.sendall((json_cmd + '\n').encode('utf-8'))
     mac_sent_status.set(f"Mac Send Status: Sweep | Raw = {json_cmd}")
     print("[MAC GUI] Sent motor JSON:", json_cmd)
@@ -318,14 +302,13 @@ def get_pwm_from_entry():
     except ValueError:
         return min_motor_pwm  # fallback PWM if invalid input
 
-def build_motor_json(left_mult, right_mult, left_dir, right_dir, servo_sweep_setting): # This returns a json string
+def build_motor_json(left_mult, right_mult, left_dir, right_dir): # This returns a json string
     base_pwm = get_pwm_from_entry()
     return json.dumps({
         "L_DIR": left_dir,
         "R_DIR": right_dir,
         "L_PWM": int(base_pwm * left_mult),
         "R_PWM": int(base_pwm * right_mult),
-        "S_SWEEP": servo_sweep_setting
     })
 
 # ------------------------  BUTTONS ------------------------ #
@@ -334,8 +317,6 @@ button3 = tk.Button(left_frame, text="Stop", command=s_button)
 button4 = tk.Button(left_frame, text="Forward", command=f_button)
 button5 = tk.Button(left_frame, text="Right", command=r_button)
 button6 = tk.Button(left_frame, text="Left", command=l_button)
-button7 = tk.Button(left_frame, text="Servo Sweep On", command=servo_sweep_on_button)
-button8 = tk.Button(left_frame, text="Servo Sweep Off", command=servo_sweep_off_button)
 video_button = tk.Button(right_frame, text="Launch Video Stream", command=launch_video_wrapper)
 stop_video_button = tk.Button(right_frame, text="Stop Video Stream", command=stop_video_wrapper)
 exit_button = tk.Button(right_frame, text="Close GUI", command=exit_gui)
@@ -345,8 +326,6 @@ button3.pack(pady=2)
 button4.pack(pady=2)
 button5.pack(pady=2)
 button6.pack(pady=2)
-button7.pack(pady=2)
-button8.pack(pady=2)
 video_button.pack(pady=5)
 stop_video_button.pack(pady=5)
 exit_button.pack(pady=5)
