@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+# 7/11/2025 Initial method of creating container with the docker file
+>>>>>>> gitlab/main
 stages:
   - build
 
@@ -15,6 +19,7 @@ build_container:
   script:
     - docker build -t $DOCKER_IMAGE:$TAG DockerFile/
     - docker push $DOCKER_IMAGE:$TAG
+<<<<<<< HEAD
 
 # 7/11/2025 Initial method of creating container with the docker file
 stages:
@@ -34,3 +39,5 @@ build_container:
   script:
     - docker build -t $DOCKER_IMAGE:$TAG -f Docker/DockerFile .
     - docker push $DOCKER_IMAGE:$TAG
+=======
+>>>>>>> gitlab/main
