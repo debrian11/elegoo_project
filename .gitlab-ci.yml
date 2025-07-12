@@ -8,11 +8,12 @@ variables:
 
 build_container:
   stage: build
-  image: docker:latest
+  image: docker:24.0.7latest
   services:
     - docker:dind
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker buildx create --use
   script:
-    - docker build -t $DOCKER_IMAGE:$TAG -f Docker/DockerFile .
-    - docker push $DOCKER_IMAGE:$TAG
+    - docker buildx build --platform linux/arm64 \
+     -t $DOCKER_IMAGE:$TAG -f Docker/DockerFile . --push
