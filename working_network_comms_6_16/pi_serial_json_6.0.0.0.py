@@ -35,9 +35,12 @@ LAST_ELEGOO_SENT = 0
 LAST_NANO_SENT = 0
 TURNING = False
 TURN_THRESHOLD = 15  # cm
+F_TURN_THRESHOLD = 5
+L_TURN_THRESHOLD = 5
+R_TURN_THRESHOLD = 5
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
-TM_TIMING_NANO = 0.200 # seconds
-TM_TIMING_ELEGOO = 0.05 # seconds
+TM_TIMING_NANO = 0.05 # seconds
+TM_TIMING_ELEGOO = 0.06 # seconds
 
 # ====================== SERIAL SETUP ==============================================================================================================
 ELEGOO_PORT = '/dev/arduino_elegoo'
@@ -99,6 +102,9 @@ try:
                     NANO_JSON_DATA = json.loads(JSON_INPUT_NANO) # parses string into a dictionary
                     # {"mssg_id":993,"F_USS":12,"L_USS":16,"R_USS":89,"L_ENCD":315,"R_ENCD":52}
                     NANO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
+                    F_USS = NANO_JSON_DATA.get("F_USS", "N/A")
+                    L_USS = NANO_JSON_DATA.get("L_USS", "N/A")
+                    R_USS = NANO_JSON_DATA.get("R_USS", "N/A")
                     L_ENCD = NANO_JSON_DATA.get("L_ENCD", "N/A")
                     R_ENCD = NANO_JSON_DATA.get("R_ENCD", "N/A")
                     LAST_LINE_NANO_JSON = JSON_INPUT_NANO # string. not a python dictionary
@@ -106,10 +112,10 @@ try:
                     # Print the json to the pi terminal locally to see mssg
                     print_nano_json = json.dumps(LAST_LINE_NANO_JSON)
 
-                    # Ultrasonic sensor check
-                    if isinstance(DIST_DATA, int) and DIST_DATA >= 0 and isinstance(SERVO_DATA, int):
-                        if DIST_DATA < TURN_THRESHOLD:
-                            if SERVO_DATA <= SERVO_RIGHT:
+                    # Ultrasonic Check 2 ------------
+                    if isinstance(F_USS, int) and isinstance (L_USS, int) and isinstance(R_USS, int):
+                        if F_USS < F_TURN_THRESHOLD:
+                            if L_USS > R_USS:
                                 if not TURNING:
                                     print("[PI] RIGHT OBSTACLE | TURN LEFT")
                                     PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
@@ -117,7 +123,7 @@ try:
                                     LAST_CMD_TIME = CURRENT_TIME
                                     TURNING = True
 
-                            elif SERVO_DATA >= SERVO_LEFT:
+                            elif R_USS > L_USS:
                                 if not TURNING:
                                     print("[PI] LEFT OBSTACLE | TURN RIGHT")
                                     PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
@@ -131,8 +137,11 @@ try:
                                     PI_ELEGOO_PORT.write((json.dumps(LAST_NON_TURN_CMD) + '\n').encode('utf-8'))
                                     LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
                                     LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = False  
+                                TURNING = False
 
+
+                    # Heading PI check
+                    #TBDDDDDDD
 
                 except json.JSONDecodeError:
                     print(f"[ERROR] Bad JSON: {JSON_INPUT_NANO} '\n")
@@ -189,7 +198,6 @@ try:
         # ------------------------------------------- PI to MAC (nano) ------------------------------------------------
         # Periodically send the Arduino data to the Mac for GUI display
         if CURRENT_TIME - LAST_NANO_SENT >= TM_TIMING_NANO:
-
             try:
                 # Parse json from Elegoo then slap the "source:elegoo" in front of the json to send to mac
                 NANO_DATA = json.loads(LAST_LINE_NANO_JSON)
@@ -208,7 +216,6 @@ try:
         # ------------------------------------------- PI to MAC (elegoo) ------------------------------------------------
         # Periodically send the Arduino data to the Mac for GUI display
         if CURRENT_TIME - LAST_ELEGOO_SENT >= TM_TIMING_ELEGOO:
-
             try:
                 # Parse json from Elegoo then slap the "source:elegoo" in front of the json to send to mac
                 ELEGOO_DATA = json.loads(LAST_LINE_ELEGOO_JSON)
@@ -222,9 +229,7 @@ try:
 
             except json.JSONDecodeError:
                 print("[ERROR] Failed to parse LAST_LINE_ELEGOO_JSON to send")
-    
             LAST_ELEGOO_SENT = CURRENT_TIME
-
 
 except KeyboardInterrupt:
     print("\nShutting down.")
