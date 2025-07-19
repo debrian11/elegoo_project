@@ -8,6 +8,7 @@
 # 7/1/2025 
 # add turn logic if sense left, turn right
 # 7/10/2025, removed servo
+# 7/19/2025, 
 
 import time
 import socket
@@ -24,8 +25,8 @@ time.sleep(2)
 # 
 # ----- Global Variables ---- #
 STOP_JSON = {"L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0}
-LEFT_TURN = {"L_DIR": 0, "R_DIR": 1, "L_PWM": 50, "R_PWM": 75}
-RIGHT_TURN = {"L_DIR": 1, "R_DIR": 0, "L_PWM": 75, "R_PWM": 50}
+LEFT_TURN = {"L_DIR": 0, "R_DIR": 1, "L_PWM": 65, "R_PWM": 65}
+RIGHT_TURN = {"L_DIR": 1, "R_DIR": 0, "L_PWM": 65, "R_PWM": 65}
 LAST_CMD_SENT_TO_ELEGO = json.dumps(STOP_JSON)
 LAST_NON_TURN_CMD =  json.dumps(STOP_JSON)
 LAST_LINE_ELEGOO_JSON = ""
@@ -35,9 +36,16 @@ LAST_ELEGOO_SENT = 0
 LAST_NANO_SENT = 0
 TURNING = False
 TURN_THRESHOLD = 15  # cm
-F_TURN_THRESHOLD = 5
-L_TURN_THRESHOLD = 5
-R_TURN_THRESHOLD = 5
+F_TURN_THRESHOLD = 4
+L_TURN_THRESHOLD = 4
+R_TURN_THRESHOLD = 4
+
+TURN_START_TIME = 0
+MIN_TURN_DURATION = 0.1  # seconds
+L_CLEAR_THRESHOLD = 8   # extra buffer to prevent flip-flop
+R_CLEAR_THRESHOLD = 8
+F_CLEAR_THRESHOLD = 8
+
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 TM_TIMING_NANO = 0.05 # seconds
 TM_TIMING_ELEGOO = 0.06 # seconds
@@ -113,32 +121,47 @@ try:
                     print_nano_json = json.dumps(LAST_LINE_NANO_JSON)
 
                     # Ultrasonic Check 2 ------------
-                    if isinstance(F_USS, int) and isinstance (L_USS, int) and isinstance(R_USS, int):
-                        if F_USS < F_TURN_THRESHOLD:
-                            if L_USS > R_USS:
-                                if not TURNING:
-                                    print("[PI] RIGHT OBSTACLE | TURN LEFT")
-                                    PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
-                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
-                                    LAST_CMD_TIME = CURRENT_TIME
-                                    TURNING = True
-
-                            elif R_USS > L_USS:
-                                if not TURNING:
-                                    print("[PI] LEFT OBSTACLE | TURN RIGHT")
-                                    PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
-                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(RIGHT_TURN)
-                                    LAST_CMD_TIME = CURRENT_TIME
-                                    TURNING = True
-                        else:
-                            if TURNING:
-                                print("[PI] RESUME LAST COMMAND")
-                                if LAST_NON_TURN_CMD:
-                                    PI_ELEGOO_PORT.write((json.dumps(LAST_NON_TURN_CMD) + '\n').encode('utf-8'))
+                    if isinstance(F_USS, int) and isinstance(L_USS, int) and isinstance(R_USS, int):
+                        if TURNING:
+                            if CURRENT_TIME - TURN_START_TIME >= MIN_TURN_DURATION:
+                                # Waited long enough — check if the path is now clear
+                                if L_USS > L_CLEAR_THRESHOLD and R_USS > R_CLEAR_THRESHOLD and F_USS > F_CLEAR_THRESHOLD:
+                                    print(f"[{CURRENT_TIME:.2f}] CLEAR - RESUME LAST COMMAND")
+                                    PI_ELEGOO_PORT.write((LAST_NON_TURN_CMD + '\n').encode('utf-8'))
                                     LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
                                     LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = False
+                                    TURNING = False
+                        else:
+                            # New turn condition (priority order: front, left, right)
+                            if F_USS < F_TURN_THRESHOLD:
+                                if L_USS > R_USS:
+                                    print(f"[{CURRENT_TIME:.2f}] FRONT OBSTACLE: TURN LEFT")
+                                    PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
+                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
+                                else:
+                                    print(f"[{CURRENT_TIME:.2f}] FRONT OBSTACLE: TURN RIGHT")
+                                    PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
+                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(RIGHT_TURN)
 
+                                LAST_CMD_TIME = CURRENT_TIME
+                                TURNING = True
+                                TURN_START_TIME = CURRENT_TIME
+
+                            elif L_USS < L_TURN_THRESHOLD:
+                                print(f"[{CURRENT_TIME:.2f}] LEFT OBSTACLE: TURN RIGHT")
+                                PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
+                                LAST_CMD_SENT_TO_ELEGO = json.dumps(RIGHT_TURN)
+                                LAST_CMD_TIME = CURRENT_TIME
+                                TURNING = True
+                                TURN_START_TIME = CURRENT_TIME
+
+                            elif R_USS < R_TURN_THRESHOLD:
+                                print(f"[{CURRENT_TIME:.2f}] RIGHT OBSTACLE: TURN LEFT")
+                                PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
+                                LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
+                                LAST_CMD_TIME = CURRENT_TIME
+                                TURNING = True
+                                TURN_START_TIME = CURRENT_TIME
 
                     # Heading PI check
                     #TBDDDDDDD
@@ -154,13 +177,13 @@ try:
                 try:
                     ELEGOO_JSON_DATA = json.loads(JSON_INPUT_ELEGOO) # parses string into a dictionary
                     # {"mssg_id":106,"L_motor":0,"R_motor":0}
-                    ELEGOO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
+                    ELEGOO_MSSG_ID = ELEGOO_JSON_DATA.get("mssg_id", "N/A")
                     L_MRT_DATA = ELEGOO_JSON_DATA.get("L_motor", "N/A")
                     R_MRT_DATA = ELEGOO_JSON_DATA.get("R_motor", "N/A")
                     LAST_LINE_ELEGOO_JSON = JSON_INPUT_ELEGOO # string. not a python dictionary
 
                     # Print the json to the pi terminal locally to see mssg
-                    print_elegoo_json = json.dumps(LAST_LINE_ELEGOO_JSON)                              
+                    # print_elegoo_json = json.dumps(LAST_LINE_ELEGOO_JSON)                              
 
                 except json.JSONDecodeError:
                     print(f"[ERROR] Bad JSON: {JSON_INPUT_ELEGOO} '\n")

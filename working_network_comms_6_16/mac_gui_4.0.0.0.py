@@ -15,7 +15,7 @@ import subprocess
 last_pi_data_json = ""
 ffplay_process = None
 
-# Store default values for motor and servo
+# Store default values for motor
 last_left_mult = 0.0
 last_right_mult = 0.0
 last_left_dir = 1
@@ -52,10 +52,11 @@ def check_pi_response():
                     elif source == "NANO":
                         # {"mssg_id":993,"F_USS":12,"L_USS":16,"R_USS":89,"L_ENCD":315,"R_ENCD":52}
                         nano_mssg_id.set(f"Messge ID: {read_json_data.get('mssg_id', 'N/A')}")
+                        heading_status.set(f"Heading: {read_json_data.get('HEAD', 'N/A')}")
                         left_motor_encoder.set(f"Left Encoder: {read_json_data.get('L_ENCD', 'N/A')}")
                         right_motor_encoder.set(f"Right Encoder: {read_json_data.get('R_ENCD', 'N/A')}")
                         f_dist_status.set(f"Front USS: {read_json_data.get('F_USS', 'N/A')}")
-                        l_dist_status.set(f"Left USS: {read_json_data.get('F_USS', 'N/A')}")
+                        l_dist_status.set(f"Left USS: {read_json_data.get('L_USS', 'N/A')}")
                         r_dist_status.set(f"Right USS: {read_json_data.get('R_USS', 'N/A')}")
                         nano_raw_json_rcvd_status.set(f"Raw Arduino JSON: {pi_data_json}")
 
@@ -122,6 +123,12 @@ right_motor_encoder = tk.StringVar()
 right_motor_encoder_label = tk.Label(plot_gui, textvariable=right_motor_encoder)
 right_motor_encoder_label.pack(pady=10)
 right_motor_encoder.set("Right Encoder: ---")  # <- Forces label to appear at launch
+
+# Heading Label
+heading_status = tk.StringVar()
+heading_status_label = tk.Label(plot_gui, textvariable=heading_status)
+heading_status_label.pack(pady=10)
+heading_status.set("Heading: ---")  # <- Forces label to appear at launch
 
 nano_time_status = tk.StringVar()
 nano_time_label = tk.Label(plot_gui, textvariable=nano_time_status)
@@ -239,7 +246,7 @@ def r_button(): # Right
 def l_button(): # Left
     global last_left_mult, last_right_mult, last_left_dir, last_right_dir
     last_left_mult = 0.0
-    last_right_mult = 0.8
+    last_right_mult = 1.0
     last_left_dir = 1
     last_right_dir = 1
 
@@ -304,7 +311,7 @@ pwm_label.pack(pady=2)
 pwm_entry.pack(pady=2)
 
 def get_pwm_from_entry():
-    min_motor_pwm = 75
+    min_motor_pwm = 85
     max_motor_pwm = 150
     try:
         percent = float(user_pwm.get())
