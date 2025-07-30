@@ -17,8 +17,13 @@ import serial
 import json
 import serial.tools.list_ports
 import os
+import csv
 from modules.pi_stream_video_usb import pi_video_stream
 from collections import OrderedDict
+
+csv_log_file = open("nano_log.csv", "w", newline="")
+csv_writer = csv.writer(csv_log_file)
+csv_writer.writerow(["timestamp", "F_USS", "L_USS", "R_USS", "L_ENCD", "R_ENCD", "L_ENCD_COV", "R_ENCD_COV", "HEAD"])
 
 print("Starting PI_SERIAL stuff shortly!!")
 time.sleep(2)
@@ -34,17 +39,33 @@ LAST_LINE_NANO_JSON = ""
 LAST_CMD_TIME = 0
 LAST_ELEGOO_SENT = 0
 LAST_NANO_SENT = 0
+START_TIME = time.time()
+START_TIME_DELAY = 10
 TURNING = False
-TURN_THRESHOLD = 15  # cm
-F_TURN_THRESHOLD = 4
-L_TURN_THRESHOLD = 4
-R_TURN_THRESHOLD = 4
+TURN_THRESHOLD = 5  # cm
+#F_TURN_THRESHOLD = 4
+#L_TURN_THRESHOLD = 4
+#R_TURN_THRESHOLD = 4
 
 TURN_START_TIME = 0
 MIN_TURN_DURATION = 0.1  # seconds
-L_CLEAR_THRESHOLD = 8   # extra buffer to prevent flip-flop
-R_CLEAR_THRESHOLD = 8
-F_CLEAR_THRESHOLD = 8
+CLEAR_THRESHOLD = 8
+#L_CLEAR_THRESHOLD = 8   # extra buffer to prevent flip-flop
+#R_CLEAR_THRESHOLD = 8
+#F_CLEAR_THRESHOLD = 8
+
+# Debounce (persistence) timers for each direction
+LEFT_OBSTACLE_DETECTED = False
+LEFT_OBSTACLE_START_TIME = 0
+
+RIGHT_OBSTACLE_DETECTED = False
+RIGHT_OBSTACLE_START_TIME = 0
+
+FRONT_OBSTACLE_DETECTED = False
+FRONT_OBSTACLE_START_TIME = 0
+
+MIN_OBSTACLE_DURATION = 0.15  # seconds: obstacle must persist this long to trigger
+
 
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 TM_TIMING_NANO = 0.05 # seconds
@@ -89,6 +110,9 @@ mac_con, mac_addr = pi_socket.accept()
 mac_con.setblocking(False)
 mac_connected = True
 print(f"Connect by {mac_addr}")
+print("Waiting 2 seconds for Arduino sensors to stabilize...")
+time.sleep(2)
+
 
 # ====================== Start video stream ========================================================================================
 if os.path.exists('/dev/video0'):
@@ -110,6 +134,7 @@ try:
                     NANO_JSON_DATA = json.loads(JSON_INPUT_NANO) # parses string into a dictionary
                     # {"mssg_id":993,"F_USS":12,"L_USS":16,"R_USS":89,"L_ENCD":315,"R_ENCD":52}
                     NANO_MSSG_ID = NANO_JSON_DATA.get("mssg_id", "N/A")
+                    HEADING = NANO_JSON_DATA.get("HEAD", "N/A")
                     F_USS = NANO_JSON_DATA.get("F_USS", "N/A")
                     L_USS = NANO_JSON_DATA.get("L_USS", "N/A")
                     R_USS = NANO_JSON_DATA.get("R_USS", "N/A")
@@ -118,50 +143,69 @@ try:
                     LAST_LINE_NANO_JSON = JSON_INPUT_NANO # string. not a python dictionary
                     
                     # Print the json to the pi terminal locally to see mssg
-                    print_nano_json = json.dumps(LAST_LINE_NANO_JSON)
+                    #print_nano_json = json.dumps(LAST_LINE_NANO_JSON)
 
                     # Ultrasonic Check 2 ------------
-                    if isinstance(F_USS, int) and isinstance(L_USS, int) and isinstance(R_USS, int):
-                        if TURNING:
-                            if CURRENT_TIME - TURN_START_TIME >= MIN_TURN_DURATION:
-                                # Waited long enough — check if the path is now clear
-                                if L_USS > L_CLEAR_THRESHOLD and R_USS > R_CLEAR_THRESHOLD and F_USS > F_CLEAR_THRESHOLD:
-                                    print(f"[{CURRENT_TIME:.2f}] CLEAR - RESUME LAST COMMAND")
-                                    PI_ELEGOO_PORT.write((LAST_NON_TURN_CMD + '\n').encode('utf-8'))
-                                    LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
+                    if CURRENT_TIME - START_TIME < START_TIME_DELAY:
+                        print("Skip initial sensor readings")
+                    else:
+                        if isinstance(F_USS, int) and isinstance(L_USS, int) and isinstance(R_USS, int):
+                            MAX_TURN_DURATION = 0.7  # seconds
+                            CLEAR_THRESHOLD_RELAXED = CLEAR_THRESHOLD - 2  # e.g., 6 instead of 8
+
+                            if TURNING:
+                                elapsed = CURRENT_TIME - TURN_START_TIME
+
+                                if elapsed >= MIN_TURN_DURATION:
+                                    # Relaxed check — makes it easier to escape the turn
+                                    if (L_USS > CLEAR_THRESHOLD_RELAXED and 
+                                        R_USS > CLEAR_THRESHOLD_RELAXED and 
+                                        F_USS > CLEAR_THRESHOLD_RELAXED):
+                                        print("[USS] CLEAR - RESUME LAST COMMAND")
+                                        PI_ELEGOO_PORT.write((LAST_NON_TURN_CMD + '\n').encode('utf-8'))
+                                        LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
+                                        LAST_CMD_TIME = CURRENT_TIME
+                                        TURNING = False
+
+                                    # Backup: hard timeout
+                                    elif elapsed >= MAX_TURN_DURATION:
+                                        print("[USS] FORCED RESUME - MAX TURN DURATION REACHED")
+                                        PI_ELEGOO_PORT.write((LAST_NON_TURN_CMD + '\n').encode('utf-8'))
+                                        LAST_CMD_SENT_TO_ELEGO = LAST_NON_TURN_CMD
+                                        LAST_CMD_TIME = CURRENT_TIME
+                                        TURNING = False
+
+                            else:
+                                # New turn condition (priority order: front, left, right)
+                                if 0 <= F_USS < TURN_THRESHOLD:
+                                    if L_USS > R_USS:
+                                        print("[USS]: FRONT OBSTACLE: TURN LEFT")
+                                        PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
+                                        LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
+                                    else:
+                                        print("[USS]: FRONT OBSTACLE: TURN RIGHT")
+                                        PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
+                                        LAST_CMD_SENT_TO_ELEGO = json.dumps(RIGHT_TURN)
+
                                     LAST_CMD_TIME = CURRENT_TIME
-                                    TURNING = False
-                        else:
-                            # New turn condition (priority order: front, left, right)
-                            if F_USS < F_TURN_THRESHOLD:
-                                if L_USS > R_USS:
-                                    print(f"[{CURRENT_TIME:.2f}] FRONT OBSTACLE: TURN LEFT")
-                                    PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
-                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
-                                else:
-                                    print(f"[{CURRENT_TIME:.2f}] FRONT OBSTACLE: TURN RIGHT")
+                                    TURNING = True
+                                    TURN_START_TIME = CURRENT_TIME
+
+                                elif 0 <= L_USS < TURN_THRESHOLD:
+                                    print("[USS]: LEFT OBSTACLE: TURN RIGHT")
                                     PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
                                     LAST_CMD_SENT_TO_ELEGO = json.dumps(RIGHT_TURN)
+                                    LAST_CMD_TIME = CURRENT_TIME
+                                    TURNING = True
+                                    TURN_START_TIME = CURRENT_TIME
 
-                                LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = True
-                                TURN_START_TIME = CURRENT_TIME
-
-                            elif L_USS < L_TURN_THRESHOLD:
-                                print(f"[{CURRENT_TIME:.2f}] LEFT OBSTACLE: TURN RIGHT")
-                                PI_ELEGOO_PORT.write((json.dumps(RIGHT_TURN) + '\n').encode('utf-8'))
-                                LAST_CMD_SENT_TO_ELEGO = json.dumps(RIGHT_TURN)
-                                LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = True
-                                TURN_START_TIME = CURRENT_TIME
-
-                            elif R_USS < R_TURN_THRESHOLD:
-                                print(f"[{CURRENT_TIME:.2f}] RIGHT OBSTACLE: TURN LEFT")
-                                PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
-                                LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
-                                LAST_CMD_TIME = CURRENT_TIME
-                                TURNING = True
-                                TURN_START_TIME = CURRENT_TIME
+                                elif 0 <= R_USS < TURN_THRESHOLD:
+                                    print("[USS]: RIGHT OBSTACLE: TURN LEFT")
+                                    PI_ELEGOO_PORT.write((json.dumps(LEFT_TURN) + '\n').encode('utf-8'))
+                                    LAST_CMD_SENT_TO_ELEGO = json.dumps(LEFT_TURN)
+                                    LAST_CMD_TIME = CURRENT_TIME
+                                    TURNING = True
+                                    TURN_START_TIME = CURRENT_TIME
 
                     # Heading PI check
                     #TBDDDDDDD
@@ -221,16 +265,39 @@ try:
         # ------------------------------------------- PI to MAC (nano) ------------------------------------------------
         # Periodically send the Arduino data to the Mac for GUI display
         if CURRENT_TIME - LAST_NANO_SENT >= TM_TIMING_NANO:
+
             try:
                 # Parse json from Elegoo then slap the "source:elegoo" in front of the json to send to mac
                 NANO_DATA = json.loads(LAST_LINE_NANO_JSON)
+                # Log to CSV
+                # Conversion factors from ticks to inches
+                l_encd_ticks = NANO_DATA.get("L_ENCD", 0)
+                r_encd_ticks = NANO_DATA.get("R_ENCD", 0)
+                l_conv = l_encd_ticks / 9.4166 if isinstance(l_encd_ticks, int) else ""
+                r_conv = r_encd_ticks / 9.333 if isinstance(r_encd_ticks, int) else ""
+
+                csv_writer.writerow([
+                    time.time(),
+                    NANO_DATA.get("F_USS", ""),
+                    NANO_DATA.get("L_USS", ""),
+                    NANO_DATA.get("R_USS", ""),
+                    l_encd_ticks,
+                    r_encd_ticks,
+                    l_conv,            # <-- new column
+                    r_conv,            # <-- new column
+                    NANO_DATA.get("HEAD", "")
+                ])
+                csv_log_file.flush()
+                os.fsync(csv_log_file.fileno())
+
+
                 # Reorder the json
                 NANO_DATA_UPDATE = OrderedDict()
                 NANO_DATA_UPDATE["source"] = "NANO" # first key
                 NANO_DATA_UPDATE["time"] = time.time() # 2nd key
                 NANO_DATA_UPDATE.update(NANO_DATA)
                 mac_con.sendall((json.dumps(NANO_DATA_UPDATE) + '\n').encode('utf-8'))
-                print(f'NANO TO MAC: {NANO_DATA_UPDATE}')
+                #print(f'NANO TO MAC: {NANO_DATA_UPDATE}')
             except json.JSONDecodeError:
                 print("[ERROR] Failed to parse LAST_LINE_NANO_JSON to send")
     
@@ -247,7 +314,7 @@ try:
                 ELEGOO_DATA_UPDATE["source"] = "ELEGOO" # first key
                 ELEGOO_DATA_UPDATE["time"] = time.time() # first key
                 ELEGOO_DATA_UPDATE.update(ELEGOO_DATA)
-                print(f'ELEGOO TO MAC: {ELEGOO_DATA_UPDATE}')
+                #print(f'ELEGOO TO MAC: {ELEGOO_DATA_UPDATE}')
                 mac_con.sendall((json.dumps(ELEGOO_DATA_UPDATE) + '\n').encode('utf-8'))
 
             except json.JSONDecodeError:
@@ -262,6 +329,7 @@ finally:
     PI_NANO_PORT.close()
     mac_con.close()
     pi_socket.close()
+    csv_log_file.close()
     if os.path.exists('/dev/video0'):
         if stream_video.poll() is None: # Check if it is still running
             stream_video.terminate()
