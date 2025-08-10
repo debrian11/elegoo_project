@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-df = pd.read_csv('nano_log.csv')
+df = pd.read_csv('../plots_8_4/drive_3.csv')
 
 # Normalize time
 df['relative_time'] = df['timestamp'] - df['timestamp'].iloc[0]

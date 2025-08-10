@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
+
 import tkinter as tk
 import socket
 import select
@@ -209,27 +212,42 @@ right_frame.pack(side='left', padx=20)
 
 arrow_frame = tk.Frame(control_gui)
 arrow_frame.pack(pady=10)
+
 # Arrow Buttons (Hold to Move)
 arrow_up = tk.Button(arrow_frame, text="↑", width=5, height=2)
 arrow_up.grid(row=0, column=1, padx=5, pady=5)
 arrow_up.bind("<ButtonPress-1>", lambda e: f_button())
 arrow_up.bind("<ButtonRelease-1>", lambda e: s_button())
+control_gui.bind("<Up>", lambda e: f_button())
+control_gui.bind("<KeyRelease-Up>", lambda e: s_button())
 
 arrow_left = tk.Button(arrow_frame, text="←", width=5, height=2)
 arrow_left.grid(row=1, column=0, padx=5, pady=5)
 arrow_left.bind("<ButtonPress-1>", lambda e: l_button())
 arrow_left.bind("<ButtonRelease-1>", lambda e: s_button())
+control_gui.bind("<Left>", lambda e: l_button())
+control_gui.bind("<KeyRelease-Left>", lambda e: s_button())
 
 arrow_down = tk.Button(arrow_frame, text="↓", width=5, height=2)
 arrow_down.grid(row=1, column=1, padx=5, pady=5)
 arrow_down.bind("<ButtonPress-1>", lambda e: b_button())
 arrow_down.bind("<ButtonRelease-1>", lambda e: s_button())
+control_gui.bind("<Down>", lambda e: b_button())
+control_gui.bind("<KeyRelease-Down>", lambda e: s_button())
 
 arrow_right = tk.Button(arrow_frame, text="→", width=5, height=2)
 arrow_right.grid(row=1, column=2, padx=5, pady=5)
 arrow_right.bind("<ButtonPress-1>", lambda e: r_button())
 arrow_right.bind("<ButtonRelease-1>", lambda e: s_button())
+control_gui.bind("<Right>", lambda e: r_button())
+control_gui.bind("<KeyRelease-Right>", lambda e: s_button())
 
+
+control_gui.bind("f", lambda e: f_button())
+control_gui.bind("b", lambda e: b_button())
+control_gui.bind("l", lambda e: l_button())
+control_gui.bind("r", lambda e: r_button())
+control_gui.bind("s", lambda e: s_button())
 
 
 # ============= DEFINE MOTOR BUTTONS ================ 
@@ -260,9 +278,9 @@ def f_button(): # Forward
 def r_button(): # Right
     global last_left_mult, last_right_mult, last_left_dir, last_right_dir
     last_left_mult = 0.8
-    last_right_mult = 0.0
+    last_right_mult = 0.5
     last_left_dir = 1
-    last_right_dir = 1
+    last_right_dir = 0
 
     mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
@@ -271,9 +289,9 @@ def r_button(): # Right
 
 def l_button(): # Left
     global last_left_mult, last_right_mult, last_left_dir, last_right_dir
-    last_left_mult = 0.0
+    last_left_mult = 0.5
     last_right_mult = 1.0
-    last_left_dir = 1
+    last_left_dir = 0
     last_right_dir = 1
 
     mac_json_msg = build_motor_json(last_left_mult, last_right_mult, last_left_dir, last_right_dir)
@@ -292,10 +310,6 @@ def s_button(): # Stop
     mac_socket.sendall((mac_json_msg + '\n').encode('utf-8'))   
     mac_sent_status.set(f"Mac Send Status: stop | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
-
-
-# ============ Arrow buttons
-
 
 # ============= DEFINE OTHER BUTTONS ================ 
 def exit_gui():
