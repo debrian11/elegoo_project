@@ -26,6 +26,7 @@ class MacClient:
         self.listen_socket = None
         self.mac_connection = None
         self.elegoo = None
+        self.rxbuf = ""
 
     def wait_for_connection(self):
         """Bind/listen once and wait for single inbound connection from Mac"""
@@ -96,7 +97,7 @@ class MacClient:
         return self.elegoo.write_json(mac_cmd)
         
     # ---- Receiver helper
-    def recv_cmd(self):
+    def recv_cmd2(self):
         """NonBlocking read of one cmd line from Mac.
         Returns a decoded string or None if no Data """
         if not self.mac_connection:
@@ -111,3 +112,21 @@ class MacClient:
         except (BlockingIOError, InterruptedError):
             return None
     
+    def recv_cmd(self):
+        """NonBlocking read of exactly one JSON line from Mac"""
+        if not self.mac_connection:
+            return None
+        try:
+            chunk = self.mac_connection.recv(1024)
+            if not chunk:
+                print("[MAC] Disconnected")
+                self.mac_connection = None
+                return None
+            self.rxbuf += chunk.decode("utf-8", errors="ignore")
+            if "\n" in self.rxbuf:
+                line, _, rest = self.rxbuf.partition("\n")
+                self._rxbuf = rest
+                return line.strip()
+            return None
+        except (BlockingIOError, InterruptedError):
+            return None

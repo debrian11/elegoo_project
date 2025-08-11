@@ -266,7 +266,7 @@ def b_button(): # Back
 def f_button(): # Forward
     global last_left_mult, last_right_mult, last_left_dir, last_right_dir
     last_left_mult = 1.0
-    last_right_mult = 0.73
+    last_right_mult = 0.65
     last_left_dir = 1
     last_right_dir = 1
 

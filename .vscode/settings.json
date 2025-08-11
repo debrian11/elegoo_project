@@ -1,3 +1,8 @@
 {
-    "C_Cpp.errorSquiggles": "disabled"
+    "C_Cpp.errorSquiggles": "disabled",
+      // Pylance stays your realtime analyzer
+    "python.analysis.typeCheckingMode": "basic",
+    // Pylint runs on save
+    "pylint.enable": true,
+    "pylint.run": "onSave"
 }

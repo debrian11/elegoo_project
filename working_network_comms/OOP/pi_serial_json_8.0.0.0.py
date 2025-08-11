@@ -4,6 +4,7 @@
 # Baseline from pi_serial_json 6.0.0.0
 # 8/10/2025:
 # Refactor into OOP code
+# Add heading adjustemtn
 
 import time
 import json
@@ -14,6 +15,9 @@ from parsing_modules import NanoPacket, ElegooPacket
 from network_module import MacClient
 from serial_module import SerialPort
 from uss_functions import USSController
+from heading_module import HeadingHold
+
+
 
 log_path = "nano_log.csv"
 log_path = time.strftime("nano_log_%Y%m%d_%H%M%S.csv")
@@ -32,8 +36,10 @@ LAST_CMD_SENT_TO_ELEGO = json.dumps(STOP_JSON)
 LAST_CMD_TIME = 0.0
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 START_TIME = time.time()
-START_TIME_DELAY = 10  # seconds to skip initial noisy sensor readings
+START_TIME_DELAY = 5  # seconds to skip initial noisy sensor readings
 mac_connected = False
+heading_hold = HeadingHold(kp = 1.0, deadband_deg = 2.0, max_trim = 40, heading_sign = 1)
+LAST_NON_TURN_CMD = None
 
 # ====================== SERIAL SETUP ==============================================================================================================
 ELEGOO_PORT = '/dev/arduino_elegoo'
@@ -82,6 +88,7 @@ try:
                     PI_ELEGOO_PORT.write_json(uss_cmd_send)   # pass str/dict, no encoding
                     LAST_CMD_SENT_TO_ELEGO = uss_cmd_send
                     LAST_CMD_TIME = CURRENT_TIME
+                    heading_hold.disarm()
 
             # CSV logging
             csv_writer.writerow([
@@ -108,6 +115,7 @@ try:
 
         # ------------------------------------------MAC to PI to ELEGOO---------------------------------------------------
         mac_cmd = mac_host.recv_cmd()  # str or None
+        corrected = None
 
         if mac_cmd:
             if not mac_connected:
@@ -115,20 +123,73 @@ try:
                 mac_connected = True
             if mac_host.send_to_elegoo_from_mac(mac_cmd):
                 LAST_CMD_SENT_TO_ELEGO = mac_cmd
-                LAST_NON_TURN_CMD = mac_cmd
-                uss_controller.record_non_turn(mac_cmd)
+
+                # Keep only the last non-empty JSON line, and validate it
+                if isinstance(mac_cmd, str):
+                    line = mac_cmd.strip().splitlines()[-1]
+                    try:
+                        json.loads(line)  # validate JSON
+                        LAST_NON_TURN_CMD = line
+                        uss_controller.record_non_turn(line)  # record the cleaned single line
+                    except json.JSONDecodeError:
+                        # If it isn't valid JSON, do not update LAST_NON_TURN_CMD
+                        pass
+                else:
+                    LAST_NON_TURN_CMD = mac_cmd
+                    uss_controller.record_non_turn(mac_cmd)
+
                 LAST_CMD_TIME = CURRENT_TIME
-        else:
-            if mac_connected and mac_host.mac_connection is None:
-                print("[MAC] Connection lost - sending STOP")
-                PI_ELEGOO_PORT.write_json(STOP_JSON)
-                LAST_CMD_SENT_TO_ELEGO = STOP_JSON
+                # Arm heading-hold if this is a straight drive command
+                cmd = LAST_NON_TURN_CMD
+                if isinstance(cmd, str):
+                    cmd = json.loads(cmd)
+
+                if (isinstance(cmd, dict)
+                        and cmd.get("L_DIR") == 1 and cmd.get("R_DIR") == 1
+                        and cmd.get("L_PWM", 0) > 0 and cmd.get("R_PWM", 0) > 0
+                        and isinstance(nano_packet, NanoPacket)):
+                    heading_hold.arm(nano_packet.HEAD)
+                    # optional: print to confirm arming
+                    # print(f"[HH] armed at {float(nano_packet.HEAD):.1f}")
+                else:
+                    heading_hold.disarm()
+
+        # --- Heading-hold correction runs every loop (only if not turning) ---
+        if (not uss_controller.turning
+            and LAST_NON_TURN_CMD is not None
+            and isinstance(nano_packet, NanoPacket)):
+
+            base = (json.loads(LAST_NON_TURN_CMD)
+                    if isinstance(LAST_NON_TURN_CMD, str)
+                    else LAST_NON_TURN_CMD)
+
+            corrected = heading_hold.apply(nano_packet.HEAD, base)
+
+            if corrected:
+                # Optional: one-line trace so you SEE it correcting
+                try:
+                    l_trim = corrected["L_PWM"] - base["L_PWM"]
+                    r_trim = corrected["R_PWM"] - base["R_PWM"]
+                    print(f"[HH] target={heading_hold.target:.1f} head={float(nano_packet.HEAD):.1f} "
+                        f"trim(L,R)=({l_trim:+d},{r_trim:+d})")
+                except Exception:
+                    pass
+
+                PI_ELEGOO_PORT.write_json(corrected)
+                LAST_CMD_SENT_TO_ELEGO = corrected
                 LAST_CMD_TIME = CURRENT_TIME
-                uss_controller.record_non_turn(STOP_JSON)
-                uss_controller.turning = False
-                mac_connected = False
-                time.sleep(0.5)
-                break
+        # --- end heading-hold block ---
+
+        if mac_connected and mac_host.mac_connection is None:
+            print("[MAC] Connection lost - sending STOP")
+            PI_ELEGOO_PORT.write_json(STOP_JSON)
+            LAST_CMD_SENT_TO_ELEGO = STOP_JSON
+            LAST_CMD_TIME = CURRENT_TIME
+            uss_controller.record_non_turn(STOP_JSON)
+            uss_controller.turning = False
+            mac_connected = False
+            time.sleep(0.5)
+            break
 
         # RESEND LAST CMD TO ARDUINO IF IDLE
         if CURRENT_TIME - LAST_CMD_TIME > CMD_ELEGOO_RESEND_INTERVAL and LAST_CMD_SENT_TO_ELEGO:
