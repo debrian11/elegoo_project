@@ -143,23 +143,8 @@ class MacClient:
         return self.elegoo.write_json(mac_cmd)
         
     # ---- Receiver helper
-    def recv_cmd2(self):
-        """NonBlocking read of one cmd line from Mac.
-        Returns a decoded string or None if no Data """
-        if not self.mac_connection:
-            return None
-        try:
-            mac_cmd = self.mac_connection.recv(1024)
-            if not mac_cmd:
-                print("[MAC] Disconnected")
-                self.mac_connection = None
-                return None
-            return mac_cmd.decode("utf-8", errors="ignore").strip()
-        except (BlockingIOError, InterruptedError):
-            return None
-    
     def recv_cmd(self):
-        """NonBlocking read of exactly one JSON line from Mac"""
+        """NonBlocking read; return the most recent complete JSON line."""
         if not self.mac_connection:
             return None
         try:
@@ -169,10 +154,14 @@ class MacClient:
                 self.mac_connection = None
                 return None
             self.rxbuf += chunk.decode("utf-8", errors="ignore")
-            if "\n" in self.rxbuf:
+
+            last_line = None
+            while "\n" in self.rxbuf:
                 line, _, rest = self.rxbuf.partition("\n")
-                self._rxbuf = rest
-                return line.strip()
-            return None
+                self.rxbuf = rest  # <- also fixes the original _rxbuf typo
+                s = line.strip()
+                if s:
+                    last_line = s
+            return last_line
         except (BlockingIOError, InterruptedError):
             return None

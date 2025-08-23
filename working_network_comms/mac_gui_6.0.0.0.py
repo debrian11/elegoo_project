@@ -255,7 +255,7 @@ def b_button(event=None): # Back
     mac_sent_status.set(f"Mac Send Status: back | Raw = {mac_json_msg}")
     print(f"Sending {mac_json_msg}")
 
-def f_button(event): # Forward
+def f_button(event=None): # Forward
     global last_left_mult, last_right_mult, last_left_dir, last_right_dir
     last_left_mult = 1.0
     last_right_mult = 0.65
