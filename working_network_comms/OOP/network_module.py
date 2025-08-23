@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0114,C0115,C0116,C0301,C0303,C0304
+# pylint: disable=C0114,C0115,C0116,C0301,C0303,C0304,W0105
 
 #import os
 from __future__ import annotations
@@ -70,6 +70,52 @@ class MacClient:
             "R_ENCD": nano_packet.R_ENCD
         }
         self.send_helper("NANO", json_data)
+    
+    def send_nano_to_mac_2(self, nano_packet: NanoPacket):
+        """Build nano json and send to mac"""
+        if not self.mac_connection:
+            return
+        try:
+            json_data = {
+                "mssg_id": nano_packet.NANO_MSSG_ID,
+                "HEAD": nano_packet.HEAD,
+                "F_USS": nano_packet.F_USS,
+                "L_USS": nano_packet.L_USS,
+                "R_USS": nano_packet.R_USS,
+                "L_ENCD": nano_packet.L_ENCD,
+                "R_ENCD": nano_packet.R_ENCD
+            }
+            final_json = { "source": "NANO", "time": time.time(), **json_data}
+            self.mac_connection.sendall((json.dumps(final_json)+ '\n').encode('utf-8'))
+
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            print("[MAC] Disconnected")
+            try:
+                self.mac_connection.close()
+            except Exception:
+                pass
+            self.mac_connection = None
+
+    def send_elegoo_to_mac_2(self, elegoo_packet: ElegooPacket):
+        """Send elegoo data to Mac"""
+        if not self.mac_connection:
+            return
+        try:
+            json_data = {
+                "mssg_id": elegoo_packet.ELEGOO_MSSG_ID,
+                "L_motor": elegoo_packet.L_MTR_DATA,
+                "R_motor": elegoo_packet.R_MTR_DATA
+            }
+            final_json = { "source": "ELEGOO", "time": time.time(), **json_data}
+            self.mac_connection.sendall((json.dumps(final_json)+ '\n').encode('utf-8'))
+            
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            print("[MAC] Disconnected")
+            try:
+                self.mac_connection.close()
+            except Exception:
+                pass
+            self.mac_connection = None
 
     def send_elegoo_to_mac(self, elegoo_packet: ElegooPacket):
         """Send elegoo data to Mac"""

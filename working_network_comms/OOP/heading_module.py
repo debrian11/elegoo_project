@@ -1,68 +1,109 @@
 #!/usr/bin/env python3
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
-
-# --- Simple heading hold ---
-def _wrap180(deg: float) -> float:
-    # Map any angle to (-180, 180]
-    d = (deg + 180.0) % 360.0 - 180.0
-    return d if d != -180.0 else 180.0
+import time
+import math
 
 class HeadingHold:
-    def __init__(self, kp=0.8, deadband_deg=2.0, max_trim=25, heading_sign=1):
-        """
-        kp: proportional gain -> PWM trim per degree of error
-        deadband_deg: no correction if |error| <= this
-        max_trim: clamp trim PWM magnitude
-        heading_sign: +1 or -1 depending on your heading convention
-                      (set after a quick test)
-        """
+    def __init__(self, kp=1.0, deadband_deg=3.0, max_trim=40,
+                 rearm_delay=0.25, reduce_only=True, min_trim=0):
         self.kp = kp
-        self.deadband = deadband_deg
+        self.deadband_deg = deadband_deg
         self.max_trim = max_trim
-        self.heading_sign = heading_sign
+        self.rearm_delay = rearm_delay
+        self.reduce_only = reduce_only
+        self.min_trim = int(min_trim)
+
         self.active = False
-        self.target = None   # degrees
+        self.target = None
+        self.last_turn_end = 0.0
+        self.prev_trim = 0
+
+    @staticmethod
+    def _is_straight(cmd: dict) -> bool:
+        return (cmd.get("L_DIR") == 1 and cmd.get("R_DIR") == 1 and
+                cmd.get("L_PWM", 0) > 0 and cmd.get("R_PWM", 0) > 0)
+
+    @staticmethod
+    def _clamp(v, lo, hi):
+        return lo if v < lo else hi if v > hi else v
+
+    @staticmethod
+    def _shortest_err_deg(target, head):
+        # signed shortest-angle error in degrees, +err = need to yaw right
+        e = (target - head + 540.0) % 360.0 - 180.0
+        return e
 
     def arm(self, current_heading: float):
         self.target = float(current_heading)
         self.active = True
+        self.prev_trim = 0
 
-    def disarm(self):
+    def disarm(self, reason: str = ""):
         self.active = False
         self.target = None
+        self.prev_trim = 0
+        # optional: print(f"[HH] disarm: {reason}")
 
-    def apply(self, current_heading: float, base_cmd: dict) -> dict | None:
-        """Return corrected cmd or None if no change."""
+    def apply(self, head_deg: float, base_cmd: dict) -> dict | None:
+        """Returns corrected command dict or None if no change."""
         if not self.active or self.target is None:
             return None
 
-        try:
-            ch = float(current_heading)
-        except (TypeError, ValueError):
+        err = self._shortest_err_deg(self.target, head_deg)
+
+        # Deadband: ignore small errors
+        if abs(err) <= self.deadband_deg:
+            trim = 0
+        else:
+            trim = self.kp * err
+            # clamp magnitude
+            trim = self._clamp(trim, -self.max_trim, self.max_trim)
+            # minimum effective correction to overcome friction (optional)
+            if self.min_trim and 0 < abs(trim) < self.min_trim:
+                trim = self.min_trim if trim > 0 else -self.min_trim
+
+        if trim == 0:
             return None
 
-        # Only correct straight-line commands (both DIR==1 and both PWM>0)
-        if not (isinstance(base_cmd, dict) and
-                base_cmd.get("L_DIR") == 1 and base_cmd.get("R_DIR") == 1 and
-                base_cmd.get("L_PWM", 0) > 0 and base_cmd.get("R_PWM", 0) > 0):
-            return None
+        # Reduce-only application (prevents "rocket" effect):
+        baseL = int(base_cmd["L_PWM"]); baseR = int(base_cmd["R_PWM"])
+        if trim > 0:
+            # +err → yaw right → slow RIGHT wheel only
+            l_pwm = baseL
+            r_pwm = max(0, baseR - int(trim))
+        else:
+            # -err → yaw left  → slow LEFT wheel only
+            l_pwm = max(0, baseL - int(-trim))
+            r_pwm = baseR
 
-        err = _wrap180(self.target - ch)  # desired - current
-        if abs(err) <= self.deadband:
-            return None
+        out = dict(base_cmd)
+        out["L_PWM"] = self._clamp(l_pwm, 0, 255)
+        out["R_PWM"] = self._clamp(r_pwm, 0, 255)
+        return out
 
-        trim = self.heading_sign * self.kp * err
-        # Clamp trim and build corrected PWMs (opposite adjustments)
-        trim = max(-self.max_trim, min(self.max_trim, trim))
+    def process(self, head_deg: float, base_cmd: dict, turning: bool, now: float | None = None) -> dict:
+        """
+        Single entry point:
+        - Disarms while turning or when not in forward mode.
+        - Re-arms after rearm_delay once straight again, targeting current heading.
+        - Applies correction if active.
+        """
+        t = time.monotonic() if now is None else now
 
-        l_pwm = int(max(0, base_cmd["L_PWM"] + trim))
-        r_pwm = int(max(0, base_cmd["R_PWM"] - trim))
+        if turning:
+            if self.active:
+                self.disarm("USS turning")
+            self.last_turn_end = t
+            return base_cmd
 
-        # If nothing changed meaningfully, skip
-        if l_pwm == base_cmd["L_PWM"] and r_pwm == base_cmd["R_PWM"]:
-            return None
+        if not self._is_straight(base_cmd):
+            if self.active:
+                self.disarm("non-forward cmd")
+            return base_cmd
 
-        corrected = dict(base_cmd)
-        corrected["L_PWM"] = l_pwm
-        corrected["R_PWM"] = r_pwm
-        return corrected
+        # Straight and not turning: (re)arm after a short delay
+        if not self.active and (t - self.last_turn_end) >= self.rearm_delay:
+            self.arm(head_deg)
+
+        corrected = self.apply(head_deg, base_cmd)
+        return corrected or base_cmd

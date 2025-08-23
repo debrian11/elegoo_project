@@ -19,7 +19,7 @@ from heading_module import HeadingHold
 
 
 
-log_path = "nano_log.csv"
+log_path = "csv_files/nano_log.csv"
 log_path = time.strftime("nano_log_%Y%m%d_%H%M%S.csv")
 new_file = not os.path.exists(log_path) or os.path.getsize(log_path) == 0
 csv_log_file = open(log_path, "a", newline="")
@@ -38,7 +38,7 @@ CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 START_TIME = time.time()
 START_TIME_DELAY = 5  # seconds to skip initial noisy sensor readings
 mac_connected = False
-heading_hold = HeadingHold(kp = 1.0, deadband_deg = 2.0, max_trim = 40, heading_sign = 1)
+heading_hold = HeadingHold(kp = 1.0, deadband_deg = 2.0, max_trim = 40)
 LAST_NON_TURN_CMD = None
 
 # ====================== SERIAL SETUP ==============================================================================================================
@@ -88,7 +88,21 @@ try:
                     PI_ELEGOO_PORT.write_json(uss_cmd_send)   # pass str/dict, no encoding
                     LAST_CMD_SENT_TO_ELEGO = uss_cmd_send
                     LAST_CMD_TIME = CURRENT_TIME
-                    heading_hold.disarm()
+                    #heading_hold.disarm()
+                    # Decide: was this a turn command or the "resume" (straight) command?
+                    try:
+                        cmd = json.loads(uss_cmd_send) if isinstance(uss_cmd_send, str) else uss_cmd_send
+                    except Exception:
+                        cmd = None
+
+                    if isinstance(cmd, dict) and (cmd.get("L_DIR") != 1 or cmd.get("R_DIR") != 1):
+                        # It's a turn command -> disarm HH
+                        heading_hold.disarm()
+                    else:
+                        # It's the resume (straight) command -> re-arm to the NEW heading
+                        if isinstance(nano_packet, NanoPacket):
+                            heading_hold.arm(nano_packet.HEAD)
+
 
             # CSV logging
             csv_writer.writerow([
@@ -106,12 +120,13 @@ try:
             os.fsync(csv_log_file.fileno())
 
             # Send data to MAC
-            mac_host.send_nano_to_mac(nano_packet)
+            #mac_host.send_nano_to_mac(nano_packet)
+            mac_host.send_nano_to_mac_2(nano_packet)
 
         # -----------------------------------------ELEGOO to PI----------------------------------------------------
         elegoo_packet = PI_ELEGOO_PORT.read_json()
         if isinstance(elegoo_packet, ElegooPacket):
-            mac_host.send_elegoo_to_mac(elegoo_packet)
+            mac_host.send_elegoo_to_mac_2(elegoo_packet)
 
         # ------------------------------------------MAC to PI to ELEGOO---------------------------------------------------
         mac_cmd = mac_host.recv_cmd()  # str or None
@@ -149,8 +164,6 @@ try:
                         and cmd.get("L_PWM", 0) > 0 and cmd.get("R_PWM", 0) > 0
                         and isinstance(nano_packet, NanoPacket)):
                     heading_hold.arm(nano_packet.HEAD)
-                    # optional: print to confirm arming
-                    # print(f"[HH] armed at {float(nano_packet.HEAD):.1f}")
                 else:
                     heading_hold.disarm()
 
@@ -162,6 +175,10 @@ try:
             base = (json.loads(LAST_NON_TURN_CMD)
                     if isinstance(LAST_NON_TURN_CMD, str)
                     else LAST_NON_TURN_CMD)
+            
+            current_heading = float(nano_packet.HEAD)
+            
+            base = heading_hold.process(current_heading, base, turning=uss_controller.turning)
 
             corrected = heading_hold.apply(nano_packet.HEAD, base)
 
