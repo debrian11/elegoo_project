@@ -86,7 +86,7 @@ class MacClient:
         Accepts JSON string or dict; SerialPort.write_json handles both.
         Returns True on success, False otherwise.
         """
-        if self.elegoo is None:   # <— fix the attribute check
+        if self.elegoo is None:
             return False
         return self.elegoo.write_json(mac_cmd)
         

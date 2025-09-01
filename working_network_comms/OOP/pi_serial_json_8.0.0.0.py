@@ -58,14 +58,14 @@ mac_connected = True
 print("Waiting several seconds for Arduino sensors to stabilize...")
 time.sleep(2)
 # ====================== Start video stream ========================================================================================
-usb_path = "/dev/video0"
-ip_out = "192.168.0.21"
-port_out = 12345
-if os.path.exists(usb_path):
-    stream_video = pi_video_stream(usb_path, ip_out, port_out)
-    print(f"Camera connected, starting stream at {ip_out}, port {port_out}")
+camera_usb_path = "/dev/video0"
+stream_ip_out = "192.168.0.21"
+stream_port_out = 12345
+if os.path.exists(camera_usb_path):
+    stream_video = pi_video_stream(usb_path=camera_usb_path, ip_out=stream_ip_out, port_out=stream_port_out)
+    print(f"Camera connected, starting stream at {stream_ip_out}, port {stream_port_out}")
 else:
-    print(f"No camera connected at {usb_path}, skipping video stream")
+    print(f"No camera connected at {camera_usb_path}, skipping video stream")
 
 # ====================== LOOP ==============================================================================================================
 try:
@@ -89,7 +89,6 @@ try:
                     PI_ELEGOO_PORT.write_json(uss_cmd_send)
                     LAST_CMD_SENT_TO_ELEGO = uss_cmd_send
                     LAST_CMD_TIME = CURRENT_TIME
-                    #heading_hold.disarm()
                     # Decide: was this a turn command or the "resume" (straight) command?
                     try:
                         cmd = json.loads(uss_cmd_send) if isinstance(uss_cmd_send, str) else uss_cmd_send
@@ -140,7 +139,7 @@ try:
 
                 # Keep only the last non-empty JSON line, and validate it
                 if isinstance(mac_cmd, str):
-                    line = mac_cmd.strip().splitlines()[-1]
+                    line = mac_cmd.strip().splitlines()[-1] #remove leading/trailing whitespace | split into lines | takes last element (final) of the list
                     try:
                         json.loads(line)  # validate JSON
                         LAST_NON_TURN_CMD = line
@@ -177,10 +176,8 @@ try:
             
             current_heading = float(nano_packet.HEAD)
             
-            base = heading_hold.process(current_heading, base, turning=uss_controller.turning)
-
+            '''base = heading_hold.process(current_heading, base, turning=uss_controller.turning)
             corrected = heading_hold.apply(nano_packet.HEAD, base)
-
             if corrected:
                 # Optional: one-line trace so you SEE it correcting
                 try:
@@ -193,7 +190,24 @@ try:
 
                 PI_ELEGOO_PORT.write_json(corrected)
                 LAST_CMD_SENT_TO_ELEGO = corrected
+                LAST_CMD_TIME = CURRENT_TIME'''
+
+            out = heading_hold.process(current_heading, base, turning=uss_controller.turning)
+
+            if out is not base:
+                # Optional trace so you SEE the correction
+                try:
+                    l_trim = out["L_PWM"] - base["L_PWM"]
+                    r_trim = out["R_PWM"] - base["R_PWM"]
+                    print(f"[HH] target={heading_hold.target:.1f} head={float(nano_packet.HEAD):.1f} "
+                        f"trim(L,R)=({l_trim:+d},{r_trim:+d})")
+                except Exception:
+                    pass
+
+                PI_ELEGOO_PORT.write_json(out)
+                LAST_CMD_SENT_TO_ELEGO = out
                 LAST_CMD_TIME = CURRENT_TIME
+
         # --- end heading-hold block ---
 
         if mac_connected and mac_host.mac_connection is None:
@@ -219,7 +233,6 @@ finally:
     PI_ELEGOO_PORT.serial_port.close()
     PI_NANO_PORT.serial_port.close()
     csv_log_file.close()
-    if os.path.exists('/dev/video0'):
-        if stream_video.poll() is None: # Check if it is still running
-            stream_video.terminate()
-            stream_video.wait()
+    if os.path.exists(f'{camera_usb_path}'):
+        stream_video.terminate()
+        stream_video.wait()
