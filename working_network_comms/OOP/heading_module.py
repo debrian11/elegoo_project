@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
+# 8/31/2025 add dataclass
 import time
-import math
+from dataclasses import dataclass
+from typing import Optional
 
+@dataclass
 class HeadingHold:
-    def __init__(self, kp=1.0, deadband_deg=3.0, max_trim=40,
-                 rearm_delay=0.25, reduce_only=True, min_trim=0):
-        self.kp = kp
-        self.deadband_deg = deadband_deg
-        self.max_trim = max_trim
-        self.rearm_delay = rearm_delay
-        self.reduce_only = reduce_only
-        self.min_trim = int(min_trim)
+    kp: float = 1.0
+    deadband_deg: float = 3.0
+    max_trim: int = 40
+    rearm_delay: float = 0.25
+    reduce_only: bool = True
+    min_trim: int = 0
 
-        self.active = False
-        self.target = None
-        self.last_turn_end = 0.0
-        self.prev_trim = 0
+    active: bool = False
+    target: Optional[float] = None
+    last_turn_end: float = 0.0
+    prev_trim: int = 0
+
 
     @staticmethod
     def _is_straight(cmd: dict) -> bool:

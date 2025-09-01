@@ -17,13 +17,11 @@ from serial_module import SerialPort
 from uss_functions import USSController
 from heading_module import HeadingHold
 
-
-
-log_path = "csv_files/nano_log.csv"
-log_path = time.strftime("nano_log_%Y%m%d_%H%M%S.csv")
+os.makedirs("csv_files", exist_ok=True)
+log_path = time.strftime("csv_files/nano_log_%Y%m%d_%H%M%S.csv")
 new_file = not os.path.exists(log_path) or os.path.getsize(log_path) == 0
-csv_log_file = open(log_path, "a", newline="")
-csv_writer = csv.writer(csv_log_file)
+csv_log_file = open(log_path, "a", newline="") #"a" = append
+csv_writer = csv.writer(csv_log_file) # Create writer object tied to that file
 if new_file:
     csv_writer.writerow(["timestamp","F_USS","L_USS","R_USS","L_ENCD","R_ENCD","L_ENCD_COV","R_ENCD_COV","HEAD"])
 
@@ -37,8 +35,8 @@ LAST_CMD_TIME = 0.0
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 START_TIME = time.time()
 START_TIME_DELAY = 5  # seconds to skip initial noisy sensor readings
-mac_connected = False
-heading_hold = HeadingHold(kp = 1.0, deadband_deg = 2.0, max_trim = 40)
+mac_connected = False 
+heading_hold = HeadingHold(kp = 1.0, deadband_deg = 2.0, max_trim = 40) # Create magnometer object
 LAST_NON_TURN_CMD = None
 
 # ====================== SERIAL SETUP ==============================================================================================================
@@ -57,21 +55,24 @@ mac_host.wait_for_connection()
 mac_host.attach_elegoo(PI_ELEGOO_PORT)
 
 mac_connected = True
-print("Waiting 2 seconds for Arduino sensors to stabilize...")
+print("Waiting several seconds for Arduino sensors to stabilize...")
 time.sleep(2)
 # ====================== Start video stream ========================================================================================
-if os.path.exists('/dev/video0'):
-    print("Camera connected, starting stream")
-    stream_video = pi_video_stream()
+usb_path = "/dev/video0"
+ip_out = "192.168.0.21"
+port_out = 12345
+if os.path.exists(usb_path):
+    stream_video = pi_video_stream(usb_path, ip_out, port_out)
+    print(f"Camera connected, starting stream at {ip_out}, port {port_out}")
 else:
-    print("No camera connected at /dev/video0, skipping video stream")
+    print(f"No camera connected at {usb_path}, skipping video stream")
 
 # ====================== LOOP ==============================================================================================================
 try:
     while True:
         CURRENT_TIME = time.time()
         # -----------------------------------------NANO to PI----------------------------------------------------
-        nano_packet = PI_NANO_PORT.read_json() 
+        nano_packet = PI_NANO_PORT.read_json() # serial_module, read_json --> NanoPacket.parsed_nano_json, at this point you have the nano read
         if isinstance(nano_packet, NanoPacket):
             LAST_LINE_NANO_JSON = nano_packet.NANO_RAW  # optional: legacy use below
 
@@ -85,7 +86,7 @@ try:
                     "R_USS": nano_packet.R_USS
                 })
                 if mac_connected and uss_cmd_send:
-                    PI_ELEGOO_PORT.write_json(uss_cmd_send)   # pass str/dict, no encoding
+                    PI_ELEGOO_PORT.write_json(uss_cmd_send)
                     LAST_CMD_SENT_TO_ELEGO = uss_cmd_send
                     LAST_CMD_TIME = CURRENT_TIME
                     #heading_hold.disarm()
@@ -103,7 +104,6 @@ try:
                         if isinstance(nano_packet, NanoPacket):
                             heading_hold.arm(nano_packet.HEAD)
 
-
             # CSV logging
             csv_writer.writerow([
                 time.time(),
@@ -120,13 +120,12 @@ try:
             os.fsync(csv_log_file.fileno())
 
             # Send data to MAC
-            #mac_host.send_nano_to_mac(nano_packet)
-            mac_host.send_nano_to_mac_2(nano_packet)
+            mac_host.send_nano_to_mac(nano_packet)
 
         # -----------------------------------------ELEGOO to PI----------------------------------------------------
         elegoo_packet = PI_ELEGOO_PORT.read_json()
         if isinstance(elegoo_packet, ElegooPacket):
-            mac_host.send_elegoo_to_mac_2(elegoo_packet)
+            mac_host.send_elegoo_to_mac(elegoo_packet)
 
         # ------------------------------------------MAC to PI to ELEGOO---------------------------------------------------
         mac_cmd = mac_host.recv_cmd()  # str or None

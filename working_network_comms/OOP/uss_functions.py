@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304,R0902
+# 8/31/2025, create dataclass
 """ 
 1. record_non_turn(cmd) - save as last non-turn cmd
 2. update_uss(uss_dict) - device to turn, keep turning, or resume last cmd
@@ -7,27 +8,25 @@
 
 import json
 import time
+from dataclasses import dataclass
 
 STOP_CMD = {"L_DIR":1, "R_DIR":1, "L_PWM":0, "R_PWM":0}
 LEFT_TURN = {"L_DIR":0, "R_DIR":1, "L_PWM":65, "R_PWM":65}
 RIGHT_TURN = {"L_DIR":1, "R_DIR":0, "L_PWM":65, "R_PWM":65}
 
+@dataclass
 class USSController:
-    def __init__(self, turn_threshold = 5, min_turn_s = 0.1, max_turn_s = 0.7, clear_threshold = 2):
-        # Turn Thresholds
-        self.turn_threshold = turn_threshold
-        self.min_turn_s = min_turn_s
-        self.max_turn_s = max_turn_s
-        self.clear_threshold = clear_threshold
+    # Turn thresholds
+    turn_threshold: int = 5
+    min_turn_s: float = 0.1
+    max_turn_s: float = 0.7
+    clear_threshold: int = 2
 
-        # State
-        self.turning = False
-        self.turn_start_time = 0.0
-        self.last_non_turn_json = json.dumps(STOP_CMD)
-
-        # Turn cmds
-        self.left_turn = json.dumps(LEFT_TURN)
-        self.right_turn = json.dumps(RIGHT_TURN)
+    turning: bool = True
+    turn_start_time: float = 0.0
+    last_non_turn_json: str = json.dumps(STOP_CMD)
+    left_turn: str = json.dumps(LEFT_TURN)
+    right_turn: str = json.dumps(RIGHT_TURN)
 
     def record_non_turn(self, cmd):
         """ Save the last non-turn cmd to resume after turn"""
@@ -35,7 +34,6 @@ class USSController:
             self.last_non_turn_json = json.dumps(cmd)
         elif isinstance(cmd, str) and cmd.strip():
             self.last_non_turn_json = cmd.strip()
-
 
     def update_uss(self, uss):
         """
@@ -45,7 +43,6 @@ class USSController:
         - Resume last cmd after turn (returns that last non-turn cmd)
         - Do nothing (Returns None)
         """
-
         current_time = time.time()
         try:
             front_data = int(uss.get("F_USS"))

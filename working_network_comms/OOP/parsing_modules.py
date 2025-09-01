@@ -5,6 +5,7 @@
 Parses outdata for sensor (Nano) and motor (Elegoo)
 """
 import json
+import time
 from dataclasses import dataclass
 from typing import Any, Dict
 
@@ -21,14 +22,6 @@ class NanoPacket:
     L_ENCD: Any
     R_ENCD: Any
     NANO_RAW: str
-
-    def is_valid(self):
-        """ Check if USS data is valid int"""
-        USS_INT_CHECK = [self.F_USS, self.L_USS, self.R_USS]
-        for x in USS_INT_CHECK:
-            if not isinstance(x, int):
-                return False
-        return True
     
     @classmethod
     def parsed_nano_json(cls, json_data: str):
@@ -57,14 +50,6 @@ class ElegooPacket:
     R_MTR_DATA: Any
     ELEGOO_RAW: str
 
-    def is_valid(self):
-        """ Check if motor data is valid int"""
-        MTR_CHECK = [self.L_MTR_DATA, self.R_MTR_DATA]
-        for y in MTR_CHECK:
-            if not isinstance(y, int):
-                return False
-        return True
-    
     @classmethod
     def parse_elegoo_json(cls, json_data: str):
         """Parse out the JSON string into ElegooPacket"""
@@ -77,17 +62,3 @@ class ElegooPacket:
             L_MTR_DATA = parsed_json.get("L_motor", "N/A"),
             R_MTR_DATA= parsed_json.get("R_motor", "N/A"),
             ELEGOO_RAW = json_data)
-
-
-@dataclass
-class MotorCommand:
-    L_PWM: int
-    R_PWM: int
-    L_DIR: int
-    R_DIR: int
-
-    def send_to_elegoo(self):
-        return json.dumps({
-            "L_PWM": self.L_PWM, "R_PWM": self.R_PWM,
-            "L_DIR": self.L_DIR, "R_DIR": self.R_DIR
-        })

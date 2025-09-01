@@ -1,32 +1,23 @@
 #!/usr/bin/env python3
 # pylint: disable=C0114,C0115,C0116,C0301,C0303,C0304,W0105
+# 8/31/2025 add dataclass
 
 #import os
 from __future__ import annotations
 import json
 import time
 import socket
-from collections import OrderedDict
+from dataclasses import dataclass, field
 from parsing_modules import ElegooPacket, NanoPacket
 
+@dataclass
 class MacClient:
-    """Minimal TCP server that waits for Mac GUI to connect
-    then sends JSON lines. Usage:
-        mac = MacClient(port=9000)
-        mac.wait_for_conntion()
-        mac.send_data(<json>)
-
-    Notes:
-    - NonBlocking connection after accept()
-    - safe to call send_data() even if disconnected"""
-
-    def __init__(self, host: str = "", port: int = 9000):
-        self.host = host
-        self.port = port
-        self.listen_socket = None
-        self.mac_connection = None
-        self.elegoo = None
-        self.rxbuf = ""
+    host: str = ""
+    port: int = 9000
+    listen_socket: socket.socket | None = None
+    mac_connection: socket.socket | None = None
+    elegoo: object | None = None
+    rxbuf: str = field(default_factory=str)
 
     def wait_for_connection(self):
         """Bind/listen once and wait for single inbound connection from Mac"""
@@ -40,38 +31,7 @@ class MacClient:
         print(f"[MAC] Connected by {addr}")
 
     # --------- Data sending
-    def send_helper(self, arduino_source: str, json_data: dict):
-        """Adds 'Source' and 'time' to the received jsons before sending to Mac"""
-        if not self.mac_connection:
-            return
-        try:
-            outbound_json = OrderedDict()
-            outbound_json["source"] = arduino_source
-            outbound_json["time"] = time.time()
-            outbound_json.update(json_data)
-            self.mac_connection.sendall((json.dumps(outbound_json)+ '\n').encode('utf-8'))
-        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
-            print("[MAC] Disconnected")
-            try:
-                self.mac_connection.close()
-            except Exception:
-                pass
-            self.mac_connection = None
-
     def send_nano_to_mac(self, nano_packet: NanoPacket):
-        """Build nano json and send to mac"""
-        json_data = {
-            "mssg_id": nano_packet.NANO_MSSG_ID,
-            "HEAD": nano_packet.HEAD,
-            "F_USS": nano_packet.F_USS,
-            "L_USS": nano_packet.L_USS,
-            "R_USS": nano_packet.R_USS,
-            "L_ENCD": nano_packet.L_ENCD,
-            "R_ENCD": nano_packet.R_ENCD
-        }
-        self.send_helper("NANO", json_data)
-    
-    def send_nano_to_mac_2(self, nano_packet: NanoPacket):
         """Build nano json and send to mac"""
         if not self.mac_connection:
             return
@@ -96,7 +56,7 @@ class MacClient:
                 pass
             self.mac_connection = None
 
-    def send_elegoo_to_mac_2(self, elegoo_packet: ElegooPacket):
+    def send_elegoo_to_mac(self, elegoo_packet: ElegooPacket):
         """Send elegoo data to Mac"""
         if not self.mac_connection:
             return
@@ -116,18 +76,6 @@ class MacClient:
             except Exception:
                 pass
             self.mac_connection = None
-
-    def send_elegoo_to_mac(self, elegoo_packet: ElegooPacket):
-        """Send elegoo data to Mac"""
-        if isinstance(elegoo_packet, ElegooPacket):
-            json_data = {
-                "mssg_id": elegoo_packet.ELEGOO_MSSG_ID,
-                "L_motor": elegoo_packet.L_MTR_DATA,
-                "R_motor": elegoo_packet.R_MTR_DATA
-            }
-        else:
-            json_data = elegoo_packet
-        self.send_helper("ELEGOO", json_data)
 
     def attach_elegoo(self, elegoo_port):
         self.elegoo = elegoo_port

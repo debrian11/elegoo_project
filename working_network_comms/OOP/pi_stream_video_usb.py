@@ -1,15 +1,16 @@
 # This scripts streams the webcam video at the /dev/usb0 over UDP
 import subprocess
 
-
-def pi_video_stream():
+def pi_video_stream(usb_path: str, ip_out: str, port_out: int):
     stream_process = subprocess.Popen([
         "ffmpeg",
         "-f", "v4l2",
         "-framerate", "24",
         "-video_size", "640x800",
-        "-i", "/dev/video0",
+        "-i", usb_path,
         "-f", "mpegts",
-        "udp://192.168.0.21:1235"
+        f"udp://{ip_out}:{port_out}"
     ])
     return stream_process
+# /dev/video0
+#192.168.0.21:1235

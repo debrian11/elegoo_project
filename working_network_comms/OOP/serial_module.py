@@ -87,11 +87,7 @@ class SerialPort:
             print(f"[SERIAL] Reconnect failed {self.usb_path}: {exc}")
             time.sleep(backoff_s)
             return False
-    
-# ---Convience check --- #
-    def received_data(self): # Flag if data received or not
-        return bool(self.serial_port and self.serial_port.in_waiting) # Check if port is exists and data exists
-    
+
 # ---Core read path --- #
     def read_json_line(self):
         """Read one line without trailing new line
@@ -152,10 +148,6 @@ class SerialPort:
             return False
         
         try:
-            # Support the MotorCommand object
-            if hasattr(pi_to_elegoo_json, "send_to_elegoo"):
-                pi_to_elegoo_json = pi_to_elegoo_json.send_to_elegoo()
-
             if isinstance(pi_to_elegoo_json, dict):
                 pi_to_elegoo_json = json.dumps(pi_to_elegoo_json)
 
