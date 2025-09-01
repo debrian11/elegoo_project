@@ -202,6 +202,10 @@ class MacCarGUI:
         self._connect()
         self._update_pwm_labels()
         self._tick()
+        # Autostart video and map window
+        self.launch_video()
+        self.open_map()
+
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -236,10 +240,27 @@ class MacCarGUI:
         # Controls under Elegoo
         controls = tk.Frame(left)
         controls.pack(anchor="w", pady=(12, 0))
-        tk.Label(controls, text="PWM % (0 -> 100)").grid(row=0, column=0, sticky="w")
+        '''tk.Label(controls, text="PWM % (0 -> 100)").grid(row=0, column=0, sticky="w")
         tk.Entry(controls, textvariable=self.user_pwm, width=6).grid(row=0, column=1, padx=6)
         tk.Label(controls, textvariable=self.entered_pwm).grid(row=0, column=2, padx=8, sticky="w")
-        tk.Label(controls, textvariable=self.computed_pwm).grid(row=0, column=3, sticky="w")
+        tk.Label(controls, textvariable=self.computed_pwm).grid(row=0, column=3, sticky="w")'''
+
+        
+        self.user_pwm = tk.IntVar(value=0)  # IntVar instead of StringVar
+        scale = tk.Scale(
+            controls,
+            from_=0, to=100,
+            orient="horizontal",
+            variable=self.user_pwm,
+            length=200,
+            label="PWM %"
+        )
+        scale.grid(row=0, column=0, columnspan=2, pady=4)
+        tk.Label(controls, textvariable=self.entered_pwm).grid(row=1, column=0, padx=8, sticky="w")
+        tk.Label(controls, textvariable=self.computed_pwm).grid(row=1, column=1, sticky="w")
+
+
+
 
         btns = tk.Frame(left)
         btns.pack(anchor="w", pady=10)
