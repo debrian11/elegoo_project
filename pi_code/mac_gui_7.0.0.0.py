@@ -7,7 +7,7 @@ import select
 import json
 import subprocess
 from dataclasses import dataclass
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 import math
 
 # ------------------------ Configuration ------------------------ #
@@ -17,7 +17,7 @@ GRID_LENGTH_FT = 50   # adjust to your home height
 CELL_FT = 1.0         # occupancy cell size (1x1 ft as requested)
 PX_PER_FT = 8         # canvas scale (pixels per foot) -> 80 ft = 640 px width
 
-# Encoder calibration (ticks per foot). Calibrate on your car.
+# Encoder calibration (ticks per foot)
 TICKS_PER_FOOT = 111
 
 # Video command (edit as needed)
@@ -36,13 +36,12 @@ def clamp(v, lo, hi):
 
 def user_heading_to_math_deg(heading_deg: float) -> float:
     """
-    Convert user's heading convention to math degrees.
-    User: 0=south, 90=west, 180=north, 270=east (clockwise increase).
+    Convert heading convention to math degrees.
+    House: 0=south, 90=west, 180=north, 270=east (clockwise increase).
     Math: 0=east, 90=north, 180=west, 270=south (counter-clockwise increase).
     Formula derived from mapping table: math = (360 + (270 - user)) % 360.
     """
     return (360.0 + (270.0 - float(heading_deg))) % 360.0
-
 
 # ------------------------ Occupancy Grid ------------------------ #
 class OccupancyGrid:
@@ -76,8 +75,7 @@ class OccupancyGrid:
             else:
                 self.mark_cell(xf, yf, 2)  # hit/occupied
 
-
-# ------------------------ Map Window ------------------------ #
+# ------------------------ Occupancy Map Window ------------------------ #
 class MapWindow:
     def __init__(self, root: tk.Tk, width_ft: int, height_ft: int):
         self.top = tk.Toplevel(root)
@@ -91,8 +89,6 @@ class MapWindow:
         self.canvas = tk.Canvas(self.top, width=self.canvas_w, height=self.canvas_h, bg="#111111", highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
         self._draw_grid_lines()
-        self.robot_item = None
-        self.heading_item = None
 
     def _draw_grid_lines(self):
         g = self.canvas
@@ -139,7 +135,6 @@ class MapWindow:
         hy = sy - int(10 * math.sin(theta_rad))  # minus because screen y increases down
         self.canvas.create_line(sx, sy, hx, hy, fill="#dddddd", width=2, tags="cell")
 
-
 # ------------------------ Motor State & GUI ------------------------ #
 @dataclass
 class MotorState:
@@ -147,7 +142,6 @@ class MotorState:
     right_mult: float = 0.0
     left_dir: int = 1
     right_dir: int = 1
-
 
 class MacCarGUI:
     def __init__(self, ip: str, port: int):
@@ -194,7 +188,7 @@ class MacCarGUI:
         self.r_uss           = tk.StringVar(value="Right USS: ---")
 
         # User PWM (default 0 as requested) and mirrors
-        self.user_pwm        = tk.StringVar(value="0")
+        self.user_pwm        = tk.IntVar(value=0)  # IntVar instead of StringVar
         self.entered_pwm     = tk.StringVar(value="Entered: — %")
         self.computed_pwm    = tk.StringVar(value="Computed base PWM: —")
 
@@ -206,13 +200,12 @@ class MacCarGUI:
         self.launch_video()
         self.open_map()
 
-
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ---------------- UI ----------------
     def _build_ui(self):
         # Window size/position
-        gui_w, gui_h = 1200, 740
+        gui_w, gui_h = 900, 540
         sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
         cx, cy = int(sw/2 - gui_w/2), int(sh/2 - gui_h/2)
         self.root.geometry(f"{gui_w}x{gui_h}+{cx}+{cy}")
@@ -240,27 +233,17 @@ class MacCarGUI:
         # Controls under Elegoo
         controls = tk.Frame(left)
         controls.pack(anchor="w", pady=(12, 0))
-        '''tk.Label(controls, text="PWM % (0 -> 100)").grid(row=0, column=0, sticky="w")
-        tk.Entry(controls, textvariable=self.user_pwm, width=6).grid(row=0, column=1, padx=6)
-        tk.Label(controls, textvariable=self.entered_pwm).grid(row=0, column=2, padx=8, sticky="w")
-        tk.Label(controls, textvariable=self.computed_pwm).grid(row=0, column=3, sticky="w")'''
-
-        
-        self.user_pwm = tk.IntVar(value=0)  # IntVar instead of StringVar
         scale = tk.Scale(
             controls,
             from_=0, to=100,
             orient="horizontal",
             variable=self.user_pwm,
             length=200,
-            label="PWM %"
+            label="PWM 0-> 100%"
         )
-        scale.grid(row=0, column=0, columnspan=2, pady=4)
+        scale.grid(row=0, column=0, columnspan=1, pady=4)
         tk.Label(controls, textvariable=self.entered_pwm).grid(row=1, column=0, padx=8, sticky="w")
         tk.Label(controls, textvariable=self.computed_pwm).grid(row=1, column=1, sticky="w")
-
-
-
 
         btns = tk.Frame(left)
         btns.pack(anchor="w", pady=10)
@@ -284,28 +267,8 @@ class MacCarGUI:
                   self.f_uss, self.l_uss, self.r_uss):
             tk.Label(right, textvariable=v).pack(anchor="w")
 
-        # Key bindings
-        '''
-        self.root.bind("<KeyPress-Up>",    self.cmd_forward)
-        self.root.bind("f", self.cmd_forward)
-        self.root.bind("<KeyPress-Down>",  self.cmd_back)
-        self.root.bind("b", self.cmd_back)
-        self.root.bind("<KeyPress-Left>",  self.cmd_left)
-        self.root.bind("l", self.cmd_left)       
-    
-        self.root.bind("<KeyPress-Right>", self.cmd_right)
-        self.root.bind("r", self.cmd_right)
-
-        self.root.bind("<KeyRelease-Up>",    self.cmd_stop)
-        self.root.bind("<KeyRelease-Down>",  self.cmd_stop)
-        self.root.bind("<KeyRelease-Left>",  self.cmd_stop)
-        self.root.bind("<KeyRelease-Right>", self.cmd_stop)
-        self.root.bind("s", self.cmd_stop)
-        '''
-
         # Track PWM entry
         self.user_pwm.trace_add("write", self._update_pwm_labels)
-    # --- Keyboard control (press = move, release = stop) ---
         # --- Keyboard control (press = move, release = stop) ---
         self._pressed_keys = set()
 
@@ -500,7 +463,6 @@ class MacCarGUI:
         pct = max(0.0, min(100.0, pct))
         return int(85 + 0.65 * pct)  # 85 + (150-85)/100 * pct
 
-    # ------------- send helpers -------------
     def _build_motor_json(self) -> str:
         m = self.motors
         base = self._base_pwm()
@@ -530,7 +492,7 @@ class MacCarGUI:
                 self.sock = None
                 self.conn_status.set("Status: Disconnected")
 
-    # ------------- commands -------------
+    # ------------- Robot commands -------------
     def cmd_forward(self, event=None):
         self.motors.left_mult, self.motors.right_mult = 1.0, 0.65
         self.motors.left_dir,  self.motors.right_dir  = 1, 1
@@ -584,7 +546,6 @@ class MacCarGUI:
         else:
             self.map_win.top.lift()
 
-    # ------------- lifecycle -------------
     def _on_close(self):
         try:
             if self.sock:
