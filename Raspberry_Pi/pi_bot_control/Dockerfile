@@ -7,7 +7,6 @@ RUN apt-get update && \
         ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-
 # App directory
 WORKDIR /opt/
 
