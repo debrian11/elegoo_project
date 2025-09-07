@@ -1,0 +1,13 @@
+services:
+  pi_bot:
+    image: "localhost/pi_brain:1.0.1"
+    pull_policy: never
+    container_name: pi_bot
+    restart: always
+    network_mode: host
+    devices:
+      - /dev/arduino_elegoo:/dev/arduino_elegoo
+      - /dev/arduino_nano:/dev/arduino_nano
+      - /dev/video0:/dev/video0
+    volumes:
+      - /opt/scripts/csv_files:/opt/scripts/csv_files

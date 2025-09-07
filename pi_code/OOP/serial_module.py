@@ -49,7 +49,7 @@ class SerialPort:
         if wait_for_device:
             while True: # wait for device node to exist
                 if not os.path.exists(self.usb_path):
-                    print(f"[SEIAL] {self.usb_path} not present. Retrying....")
+                    print(f"[SERIAL] {self.usb_path} not present. Retrying....")
                     time.sleep(1.0)
                     continue
                 try:

@@ -75,6 +75,8 @@ try:
         nano_packet = PI_NANO_PORT.read_json() # serial_module, read_json --> NanoPacket.parsed_nano_json, at this point you have the nano read
         if isinstance(nano_packet, NanoPacket):
             LAST_LINE_NANO_JSON = nano_packet.NANO_RAW  # optional: legacy use below
+            #qqq 
+            print(f"NANO: {nano_packet}")
 
             # USS decision
             if CURRENT_TIME - START_TIME < START_TIME_DELAY:
@@ -124,6 +126,8 @@ try:
         # -----------------------------------------ELEGOO to PI----------------------------------------------------
         elegoo_packet = PI_ELEGOO_PORT.read_json()
         if isinstance(elegoo_packet, ElegooPacket):
+            # qqq
+            print(f"ELEGOO: {elegoo_packet}")
             mac_host.send_elegoo_to_mac(elegoo_packet)
 
         # ------------------------------------------MAC to PI to ELEGOO---------------------------------------------------
@@ -140,6 +144,8 @@ try:
                 # Keep only the last non-empty JSON line, and validate it
                 if isinstance(mac_cmd, str):
                     line = mac_cmd.strip().splitlines()[-1] #remove leading/trailing whitespace | split into lines | takes last element (final) of the list
+                    # qqq
+                    print(f"MAC {line}")
                     try:
                         json.loads(line)  # validate JSON
                         LAST_NON_TURN_CMD = line

@@ -10,6 +10,10 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 import math
 
+# Pi variables
+pi_1 = "192.168.0.63"
+pi_2 = "192.168.0.226"
+
 # ------------------------ Configuration ------------------------ #
 # House/grid defaults. Each cell is 1 ft.
 GRID_WIDTH_FT  = 50   # adjust to your home width
@@ -569,5 +573,6 @@ class MacCarGUI:
         self.root.mainloop()
 
 if __name__ == "__main__":
-    app = MacCarGUI("192.168.0.63", 9000)
+    app = MacCarGUI(pi_1, 9000)
+    #app = MacCarGUI(pi_2, 9000)
     app.run()
