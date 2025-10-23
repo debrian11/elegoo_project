@@ -2,24 +2,23 @@
 *A Pi Aurduino Robot that navigates, maps, and streams video.*
 
 This project implements a small robot car built on the **ELEGOO Smart Robot Car Kit V4.0**, integrating a **Raspberry Pi** and **two Arduino microcontrollers**.
-During integrating and building process, there are a series of **test_scripts** to load onto test Arduino's to test the Pi scripts without needing all sensors.
 
 
 <p align="center">
   <img src="pi_arduino_bot.jpg" alt="Pi–Arduino Robot Car" width="500"><br>
-  <i> P.A.B </i>
+  <i> P.A.R.C </i>
 </p>
 
-## Architecture. 
+## Architecture  
 
 <p align="center">
-  <img src="blockdiagram.png" alt="Pi–Arduino Robot Block Diagram" width="600"><br>
+  <img src="blockdiagram.png" alt="Pi–Arduino Robot Block Diagram" width="700"><br>
   <i> Connectivity Diagram </i>
 </p>
 
 
 ### Arduino's
-- Code is written in Arduino coding format with standard libraries and some custom header files to clean up main loop.
+- Code is written in Arduino coding format with standard libraries and some custom header files to clean up main loop. During integrating and building process, there are a series of **test_scripts** to load onto test Arduino's to test the Pi scripts without needing all sensors.
 - **Elegoo Uno** Reads JSON input from Pi and sends PWM values to the 4 motors. The Elegoo Motor Shield actually only has 2 inputs for 4 motors (left and right). The motor PWM is then reported back to the Pi in a JSON format.
 - **Nano** Continously reads the sensor data from the ultrasonic sensors, rear wheel encoders, and magnemeter and then sends it in a JSON format over serial to the Pi.
 
@@ -31,7 +30,12 @@ During integrating and building process, there are a series of **test_scripts** 
 - udev rules set for each Arduino so that every time container or Pi is rebooted, consistent port mapping
 
 ### Control Laptop
-- Runs a Tkinter GUI to send commands, monitor telemetry, and draws a block occupancy map of where robot has been
+- Runs a Tkinter GUI to send commands, monitor telemetry, and draws a block occupancy map of where robot has been. 
+
+<p align="center">
+  <img src="running_gui.png" alt="GUI" width="700"><br>
+  <i> Running GUI</i>
+</p>
 
 ## Repository Structure
 elegoo_project/  
