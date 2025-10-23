@@ -1,7 +1,6 @@
 # Dockerfile
 FROM python:3.11-slim
 
-# Ensure non-interactive installs and keep image small
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         ffmpeg \

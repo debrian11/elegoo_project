@@ -1,0 +1,10 @@
+services:
+  mac_gui:
+    image: "mac_gui:1.0"
+    pull_policy: never
+    container_name: mac_gui
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    network_mode: host

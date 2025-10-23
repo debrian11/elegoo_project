@@ -92,7 +92,7 @@ class MacClient:
         
     # ---- Receiver helper
     def recv_cmd(self):
-        """NonBlocking read; return the most recent complete JSON line."""
+        """return the most recent complete JSON line."""
         if not self.mac_connection:
             return None
         try:

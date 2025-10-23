@@ -44,7 +44,6 @@ class HeadingHold:
         self.active = False
         self.target = None
         self.prev_trim = 0
-        # optional: print(f"[HH] disarm: {reason}")
 
     def apply(self, head_deg: float, base_cmd: dict) -> dict | None:
         """Returns corrected command dict or None if no change."""
@@ -60,14 +59,12 @@ class HeadingHold:
             trim = self.kp * err
             # clamp magnitude
             trim = self._clamp(trim, -self.max_trim, self.max_trim)
-            # minimum effective correction to overcome friction (optional)
             if self.min_trim and 0 < abs(trim) < self.min_trim:
                 trim = self.min_trim if trim > 0 else -self.min_trim
 
         if trim == 0:
             return None
 
-        # Reduce-only application (prevents "rocket" effect):
         baseL = int(base_cmd["L_PWM"]); baseR = int(base_cmd["R_PWM"])
         if trim > 0:
             # +err → yaw right → slow RIGHT wheel only
@@ -103,7 +100,7 @@ class HeadingHold:
                 self.disarm("non-forward cmd")
             return base_cmd
 
-        # Straight and not turning: (re)arm after a short delay
+        # Straight and not turning: rearm after a short delay
         if not self.active and (t - self.last_turn_end) >= self.rearm_delay:
             self.arm(head_deg)
 
