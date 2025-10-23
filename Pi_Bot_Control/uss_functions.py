@@ -39,9 +39,9 @@ class USSController:
         """
         Decide whether to:
         - Start a turn (returns LEFT or RIGHT cmd)
-        - Keep turning (Returns None)
+        - Keep turning
         - Resume last cmd after turn (returns that last non-turn cmd)
-        - Do nothing (Returns None)
+        - Do nothing
         """
         current_time = time.time()
         try:

@@ -74,7 +74,7 @@ try:
         # -----------------------------------------NANO to PI----------------------------------------------------
         nano_packet = PI_NANO_PORT.read_json() # serial_module, read_json --> NanoPacket.parsed_nano_json, at this point you have the nano read
         if isinstance(nano_packet, NanoPacket):
-            LAST_LINE_NANO_JSON = nano_packet.NANO_RAW  # optional: legacy use below
+            LAST_LINE_NANO_JSON = nano_packet.NANO_RAW
             #qqq 
             print(f"NANO: {nano_packet}")
 
@@ -91,7 +91,7 @@ try:
                     PI_ELEGOO_PORT.write_json(uss_cmd_send)
                     LAST_CMD_SENT_TO_ELEGO = uss_cmd_send
                     LAST_CMD_TIME = CURRENT_TIME
-                    # Decide: was this a turn command or the "resume" (straight) command?
+                    # Decide: was this a turn command or nah
                     try:
                         cmd = json.loads(uss_cmd_send) if isinstance(uss_cmd_send, str) else uss_cmd_send
                     except Exception:
@@ -101,7 +101,7 @@ try:
                         # It's a turn command -> disarm HH
                         heading_hold.disarm()
                     else:
-                        # It's the resume (straight) command -> re-arm to the NEW heading
+                        # change to new heading
                         if isinstance(nano_packet, NanoPacket):
                             heading_hold.arm(nano_packet.HEAD)
 
@@ -181,22 +181,6 @@ try:
                     else LAST_NON_TURN_CMD)
             
             current_heading = float(nano_packet.HEAD)
-            
-            '''base = heading_hold.process(current_heading, base, turning=uss_controller.turning)
-            corrected = heading_hold.apply(nano_packet.HEAD, base)
-            if corrected:
-                # Optional: one-line trace so you SEE it correcting
-                try:
-                    l_trim = corrected["L_PWM"] - base["L_PWM"]
-                    r_trim = corrected["R_PWM"] - base["R_PWM"]
-                    print(f"[HH] target={heading_hold.target:.1f} head={float(nano_packet.HEAD):.1f} "
-                        f"trim(L,R)=({l_trim:+d},{r_trim:+d})")
-                except Exception:
-                    pass
-
-                PI_ELEGOO_PORT.write_json(corrected)
-                LAST_CMD_SENT_TO_ELEGO = corrected
-                LAST_CMD_TIME = CURRENT_TIME'''
 
             out = heading_hold.process(current_heading, base, turning=uss_controller.turning)
 

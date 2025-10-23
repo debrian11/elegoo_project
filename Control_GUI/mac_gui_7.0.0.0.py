@@ -15,16 +15,16 @@ pi_1 = "192.168.0.63"
 pi_2 = "192.168.0.226"
 
 # ------------------------ Configuration ------------------------ #
-# House/grid defaults. Each cell is 1 ft.
-GRID_WIDTH_FT  = 50   # adjust to your home width
-GRID_LENGTH_FT = 50   # adjust to your home height
-CELL_FT = 1.0         # occupancy cell size (1x1 ft as requested)
-PX_PER_FT = 8         # canvas scale (pixels per foot) -> 80 ft = 640 px width
+# House defaults. Each cell is 1 ft.
+GRID_WIDTH_FT  = 50   
+GRID_LENGTH_FT = 50   
+CELL_FT = 1.0         # occupancy cell size (1x1 ft)
+PX_PER_FT = 8         # map scale (pixels per foot) -> 80 ft = 640 px width
 
 # Encoder calibration (ticks per foot)
 TICKS_PER_FOOT = 111
 
-# Video command (edit as needed)
+# Video command
 VIDEO_CMD = [
     "ffplay",
     "-fflags", "nobuffer",
@@ -39,17 +39,11 @@ def clamp(v, lo, hi):
     return lo if v < lo else hi if v > hi else v
 
 def user_heading_to_math_deg(heading_deg: float) -> float:
-    """
-    Convert heading convention to math degrees.
-    House: 0=south, 90=west, 180=north, 270=east (clockwise increase).
-    Math: 0=east, 90=north, 180=west, 270=south (counter-clockwise increase).
-    Formula derived from mapping table: math = (360 + (270 - user)) % 360.
-    """
     return (360.0 + (270.0 - float(heading_deg))) % 360.0
 
 # ------------------------ Occupancy Grid ------------------------ #
 class OccupancyGrid:
-    """Simple 2D occupancy grid with 1 ft cells: 0=unknown, 1=free, 2=occupied."""
+    """2D occupancy grid with 1 ft cells: 0=unknown, 1=free, 2=occupied."""
     def __init__(self, width_ft: int, height_ft: int):
         self.w = int(width_ft)
         self.h = int(height_ft)
@@ -65,11 +59,9 @@ class OccupancyGrid:
         x = int(x_ft)
         y = int(y_ft)
         if 0 <= x < self.w and 0 <= y < self.h:
-            # do not downgrade occupied to free; prefer max
             self.grid[y][x] = max(self.grid[y][x], value)
 
     def raycast_mark(self, x0_ft: float, y0_ft: float, theta_rad: float, distance_ft: float):
-        """Mark cells along a ray as free until the last cell which is occupied."""
         steps = max(1, int(distance_ft / CELL_FT))
         for i in range(1, steps + 1):
             xf = x0_ft + (i * CELL_FT) * math.cos(theta_rad)
@@ -77,7 +69,7 @@ class OccupancyGrid:
             if i < steps:
                 self.mark_cell(xf, yf, 1)  # free
             else:
-                self.mark_cell(xf, yf, 2)  # hit/occupied
+                self.mark_cell(xf, yf, 2)  # occupied
 
 # ------------------------ Occupancy Map Window ------------------------ #
 class MapWindow:
@@ -109,7 +101,7 @@ class MapWindow:
         return sx, sy
 
     def redraw(self, grid: OccupancyGrid, robot_pose: Tuple[float, float, float]):
-        # full redraw (simple and safe)
+        # full redraw
         self.canvas.delete("cell")
         # draw occupied and free cells
         for gy in range(grid.h):
@@ -129,7 +121,7 @@ class MapWindow:
                     color = "#8b1e1e"
                 self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline="", tags="cell")
 
-        # draw robot
+        # draw robot figure
         x_ft, y_ft, theta_rad = robot_pose
         sx, sy = self._to_screen(x_ft, y_ft)
         r = 4  # pixel radius
@@ -159,7 +151,7 @@ class MacCarGUI:
         self.motors = MotorState()
         self._reconnect_ms = 1000  # retry every 1s if disconnected
 
-        # pose (feet, radians). Start at 0,0 and some heading; will be set by NANO
+        # pose (feet, radians). Start at 0,0 will be set by NANO
         self.x_ft = 0.0
         self.y_ft = 0.0
         self.theta_rad = 0.0  # math radians
@@ -191,7 +183,7 @@ class MacCarGUI:
         self.l_uss           = tk.StringVar(value="Left USS: ---")
         self.r_uss           = tk.StringVar(value="Right USS: ---")
 
-        # User PWM (default 0 as requested) and mirrors
+        # User PWM (default 0) and mirrors
         self.user_pwm        = tk.IntVar(value=0)  # IntVar instead of StringVar
         self.entered_pwm     = tk.StringVar(value="Entered: — %")
         self.computed_pwm    = tk.StringVar(value="Computed base PWM: —")
@@ -295,10 +287,8 @@ class MacCarGUI:
                     elif action == "back":  self.cmd_back()
                     elif action == "left":  self.cmd_left()
                     elif action == "right": self.cmd_right()
-                # if an Entry has focus, still act, but block text insertion
                 if isinstance(e.widget, tk.Entry):
                     return "break"
-                # also block default handling so arrows don't scroll widgets, etc.
                 return "break"
 
             if k == "space":
@@ -342,7 +332,7 @@ class MacCarGUI:
 
     def _tick(self):
         if self.sock is None:
-            # schedule a less aggressive reconnect
+            # reconnect
             self.root.after(self._reconnect_ms, self._connect)
         else:
             self._read_once()

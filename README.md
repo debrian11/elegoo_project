@@ -5,14 +5,14 @@ This project implements a small robot car built on the **ELEGOO Smart Robot Car 
 
 
 <p align="center">
-  <img src="pi_arduino_bot.jpg" alt="Pi–Arduino Robot Car" width="500"><br>
+  <img src="/Pi_Bot_Control/pi_arduino_bot.jpg" alt="Pi–Arduino Robot Car" width="500"><br>
   <i> P.A.R.C </i>
 </p>
 
 ## Architecture  
 
 <p align="center">
-  <img src="blockdiagram.png" alt="Pi–Arduino Robot Block Diagram" width="700"><br>
+  <img src="/Motor_Sensor_Control/blockdiagram.png" alt="Pi–Arduino Robot Block Diagram" width="700"><br>
   <i> Connectivity Diagram </i>
 </p>
 
@@ -33,24 +33,24 @@ This project implements a small robot car built on the **ELEGOO Smart Robot Car 
 - Runs a Tkinter GUI to send commands, monitor telemetry, and draws a block occupancy map of where robot has been. 
 
 <p align="center">
-  <img src="running_gui.png" alt="GUI" width="700"><br>
+  <img src="/Control_GUI/running_gui.png" alt="GUI" width="700"><br>
   <i> Running GUI</i>
 </p>
 
 ## Repository Structure
 elegoo_project/  
--- Arduino/  
+-- Motor_Sensor_Control/  
 ---- main_elegoo_cpp6/  
 ---- main_nano_cpp5/  
 ---- magnometer_setup  
 
--- Raspberry_Pi/  
+-- Pi_Bot_Control/  
 ---- (Pi Files)  
 
--- GUI/  
+-- Control_GUI/  
 ---- mac_gui_X.X.py  
 
--- test_scripts/  
+-- Arduino_Test_Scripts/  
 ---- elegoo_test/  
 ---- nano_test/  
 
