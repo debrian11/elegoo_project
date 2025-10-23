@@ -1,5 +1,5 @@
-# Arduino
-### 09/07/2025
+# Arduino Overview
+### Updated 09/07/2025
 
 The Arduino portion consist of 2 Arduinos:
 1. **Arduino Elegoo Uno**
