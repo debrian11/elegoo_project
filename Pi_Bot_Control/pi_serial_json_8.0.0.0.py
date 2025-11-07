@@ -17,6 +17,7 @@ from serial_module import SerialPort
 from uss_functions import USSController
 from heading_module import HeadingHold
 
+
 os.makedirs("csv_files", exist_ok=True)
 log_path = time.strftime("csv_files/nano_log_%Y%m%d_%H%M%S.csv")
 new_file = not os.path.exists(log_path) or os.path.getsize(log_path) == 0
@@ -34,7 +35,7 @@ LAST_CMD_SENT_TO_ELEGO = json.dumps(STOP_JSON)
 LAST_CMD_TIME = 0.0
 CMD_ELEGOO_RESEND_INTERVAL = 0.2  # seconds
 START_TIME = time.time()
-START_TIME_DELAY = 5  # seconds to skip initial noisy sensor readings
+START_TIME_DELAY = 3  # seconds to skip initial noisy sensor readings
 mac_connected = False 
 heading_hold = HeadingHold(kp = 1.0, deadband_deg = 2.0, max_trim = 40) # Create magnometer object
 LAST_NON_TURN_CMD = None
@@ -55,7 +56,6 @@ mac_host.wait_for_connection()
 mac_host.attach_elegoo(PI_ELEGOO_PORT)
 
 mac_connected = True
-print("Waiting several seconds for Arduino sensors to stabilize...")
 time.sleep(2)
 # ====================== Start video stream ========================================================================================
 camera_usb_path = "/dev/video0"

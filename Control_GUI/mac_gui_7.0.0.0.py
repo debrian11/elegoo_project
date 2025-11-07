@@ -75,7 +75,7 @@ class OccupancyGrid:
 class MapWindow:
     def __init__(self, root: tk.Tk, width_ft: int, height_ft: int):
         self.top = tk.Toplevel(root)
-        self.top.title("Occupancy Map (NANO)")
+        self.top.title("Occupancy Map (Arduino NANO)")
         self.width_ft = width_ft
         self.height_ft = height_ft
         self.canvas_w = int(width_ft * PX_PER_FT)
@@ -209,7 +209,7 @@ class MacCarGUI:
         # Title and status
         title = tk.Frame(self.root)
         title.pack(fill="x", pady=8)
-        tk.Label(title, text="Elegoo Motor Telemetry", font=("Helvetica", 20, "bold")).pack(side="left", padx=10)
+        tk.Label(title, text="Arduino Elegoo Motor Telemetry", font=("Helvetica", 20, "bold")).pack(side="left", padx=10)
         tk.Label(title, textvariable=self.conn_status).pack(side="right", padx=10)
 
         # Two-column telemetry area

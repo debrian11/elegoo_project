@@ -23,7 +23,7 @@ void loop() {
   current_time = millis();
 
 // For test purposes only in simulating a changing distance output of Ultrasonic
-  if (current_time - last_time_update > 500) {
+  if (current_time - last_time_update > 110) {
     last_time_update = current_time;
     if (heading > 100) {
       heading = 0;
