@@ -1,0 +1,60 @@
+network:
+  rx_ip: &rx_ip "192.168.0.21"
+
+  endpoints:
+  # Sent to pi
+    nano_to_pi:
+      ip: *rx_ip
+      port: 5005
+
+    elegoo_to_pi:
+      ip: *rx_ip
+      port: 5006
+
+    mac_cmd:
+      ip: *rx_ip
+      port: 5007
+
+    mac_pulse:
+      ip: *rx_ip
+      port: 5008
+
+    pi2_pulse:
+      ip: *rx_ip
+      port: 5009
+
+
+  # Sent from pi
+    nano_to_mac:
+      ip: *rx_ip
+      port: 5010
+
+    elegoo_to_mac:
+      ip: *rx_ip
+      port: 5011
+
+    pi_to_mac_position:
+      ip: *rx_ip
+      port: 5012
+
+    pi_to_motor:
+      ip: *rx_ip
+      port: 5013
+
+    pi_to_pi2:
+      ip: *rx_ip
+      port: 5014
+
+intervals:
+
+  nano_read: 0.1
+  elegoo_read: 0.5
+  mac_cmd_read: 0.3
+  mac_pulse_read: 4
+  pi2_pulse_read: 5
+
+  nano_send: 1
+  elegoo_send: 2
+  pi_position: 3
+  motor_cmd: 4
+  pi2_cmd: 5
