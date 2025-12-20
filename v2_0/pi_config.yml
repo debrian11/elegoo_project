@@ -1,5 +1,5 @@
 network:
-  rx_ip: &rx_ip "192.168.0.21"
+  rx_ip: &rx_ip "192.168.1.72"
 
   endpoints:
   # Sent to pi
@@ -47,11 +47,11 @@ network:
 
 intervals:
 
-  nano_read: 0.1
-  elegoo_read: 0.5
-  mac_cmd_read: 0.3
-  mac_pulse_read: 4
-  pi2_pulse_read: 5
+  nano_read:      0.5
+  elegoo_read:    0.1
+  mac_cmd_read:   0.2
+  mac_pulse_read: 0.3
+  pi2_pulse_read: 0.4
 
   nano_send: 1
   elegoo_send: 2

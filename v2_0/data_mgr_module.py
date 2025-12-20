@@ -1,3 +1,4 @@
+#pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
 import json
 import yaml
 
@@ -79,20 +80,3 @@ def motor_cmder(motor_cmd: dict):
     output = json.dumps(motor_cmd)
     encoded_packet = output.encode("utf-8")
     return encoded_packet
-
-
-def intervals_read_send(parsed_out_yaml: dict) -> dict:
-    interval_list = {
-    "nano_read_interval"        :        parsed_out_yaml["intervals"]["nano_read"],
-    "elegoo_read_interval"      :        parsed_out_yaml["intervals"]["elegoo_read"],
-    "mac_cmd_read_interval"     :        parsed_out_yaml["intervals"]["mac_cmd_read"],
-    "mac_pulse_read_interval"   :        parsed_out_yaml["intervals"]["mac_pulse_read"],
-    "pi2_pulse_read"            :        parsed_out_yaml["intervals"]["pi2_pulse_read"],
-
-    "nano_send_interval"        :        parsed_out_yaml["intervals"]["nano_send"],
-    "elegoo_send_interval"      :        parsed_out_yaml["intervals"]["elegoo_send"],
-    "pi_position_interval"      :        parsed_out_yaml["intervals"]["pi_position"],
-    "motor_cmd_interval"        :        parsed_out_yaml["intervals"]["motor_cmd"],
-    "pi2_cmd_interval"          :        parsed_out_yaml["intervals"]["pi2_cmd"]
-    }
-    return interval_list
