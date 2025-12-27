@@ -40,7 +40,7 @@ def mac_to_pi(counter, random_dir):
     "time": time.time(),
     "mssg_id": counter ,
     "cmd": random_dir,
-    "pwr": counter + 50
+    "pwr": 100
     }
     return json_data
 

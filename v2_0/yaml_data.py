@@ -1,9 +1,12 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
 import socket
 
-def assign_read_sockets(parsed_out_yaml: dict) -> list:
+def assign_read_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
     all_sockets = {}
-    rx_ip = parsed_out_yaml["network"]["rx_ip"]
+    if test_setting == 1:
+        rx_ip = "192.168.1.97" # pi ip
+    else:
+        rx_ip = "192.168.1.72" # laptop ip
     endpoints = {
         "nano"      : (rx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_pi"]["port"]),
         "elegoo"    : (rx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
@@ -34,12 +37,20 @@ def intervals_read_send(parsed_out_yaml: dict) -> dict:
     "elegoo_send_interval"      :        parsed_out_yaml["intervals"]["elegoo_send"],
     "pi_position_interval"      :        parsed_out_yaml["intervals"]["pi_position"],
     "motor_cmd_interval"        :        parsed_out_yaml["intervals"]["motor_cmd"],
-    "pi2_cmd_interval"          :        parsed_out_yaml["intervals"]["pi2_cmd"]
+    "pi2_cmd_interval"          :        parsed_out_yaml["intervals"]["pi2_cmd"],
+
+    "mac_hb_timeout"            :        parsed_out_yaml["intervals"]["mac_hb_timeout_interval"],
+    "mac_cmd_timeout"           :        parsed_out_yaml["intervals"]["mac_cmd_timeout_interval"],
+    "pi2_hb_timeout"            :        parsed_out_yaml["intervals"]["pi2_hb_timeout_interval"]
     }
     return interval_list
 
-def send_ports(parsed_out_yaml: dict) -> dict:
-    tx_ip = parsed_out_yaml["network"]["rx_ip"]
+def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
+    if test_setting == 1:
+        tx_ip = "192.168.1.97" # pi ip
+    else:
+        tx_ip = "192.168.1.72" # laptop ip
+
     sendpoints = {
         "nano"      : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_pi"]["port"]),
         "elegoo"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
@@ -48,6 +59,8 @@ def send_ports(parsed_out_yaml: dict) -> dict:
         "pi2_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"])
     } 
     return sendpoints
+
+
 
 
 def send_json(send_socket: socket, cur_time: float, last_time: float, timing_interval: float, send_ip: str, send_port: int, json_msg: str, counter: int, who_sent: str):

@@ -27,19 +27,30 @@ def initial_values():
     head =      0
     l_encd =    0
     r_encd =    0
-
     r_motor =   0
     l_motor =   0
-
-    cmd =       ""
+    cmd =       "STOP"
     pwr =       0
+    return f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr
 
+def initial_time_values():
     mac_pulse_time_rvd = 0
-    mac_pulse_mssg_id = 0
     pi2_pulse_time_rvd = 0
-    pi2_pulse_mssg_id = 0
+    nano_time = 0
+    elegoo_time = 0
+    mac_cmd_time = 0
 
-    return f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr, mac_pulse_mssg_id, mac_pulse_time_rvd, pi2_pulse_mssg_id, pi2_pulse_time_rvd
+    last_mac_cmd_time_rcv = 0
+    last_mac_pulse_time_rcv = 0
+    return mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv
+
+def initial_mssg_id_values():
+    mac_pulse_mssg_id = 0
+    pi2_pulse_mssg_id = 0
+    nano_id = 0
+    elegoo_id = 0
+    mac_cmd_id = 0
+    return mac_pulse_mssg_id, pi2_pulse_mssg_id, nano_id, elegoo_id, mac_cmd_id
 
 # Incoming Nano TM
 def nano_parser(json_pkt: dict):
@@ -49,19 +60,25 @@ def nano_parser(json_pkt: dict):
     head = json_pkt.get("HEAD", 0)
     l_encd = json_pkt.get("L_ENCD", 0)
     r_encd = json_pkt.get("R_ENCD", 0)
-    return f_uss, r_uss, l_uss, head, l_encd, r_encd
+    nano_time = json_pkt.get("time", 0)
+    nano_id = json_pkt.get("mssg_id", 0)
+    return f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_time, nano_id
 
 # Incoming Motor TM
 def elegoo_parser(json_pkt: dict):
     r_motor = json_pkt.get("R_MOTOR", 0)
     l_motor = json_pkt.get("L_MOTOR", 0)
-    return r_motor, l_motor
+    elegoo_time = json_pkt.get("time", 0)
+    elegoo_id = json_pkt.get("mssg_id", 0)
+    return r_motor, l_motor, elegoo_time, elegoo_id
 
 # Parse out the two values, CMD & PWR, from Mac into useful varaibles (int)
 def mac_parser(json_pkt: dict):
     cmd = json_pkt.get("cmd", "N/A")
-    pwr = json_pkt.get("speed", 0)
-    return cmd, pwr
+    pwr = json_pkt.get("pwr", 0)
+    mac_cmd_time = json_pkt.get("time", 0)
+    mac_cmd_id = json_pkt.get("mssg_id", 0)
+    return cmd, pwr, mac_cmd_time, mac_cmd_id
 
 # Mac Heartbeat
 def read_mac_heartbeat(json_pkt: dict):

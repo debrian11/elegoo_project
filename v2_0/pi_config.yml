@@ -1,5 +1,6 @@
 network:
-  rx_ip: &rx_ip "192.168.1.72"
+  rx_ip_local: &rx_ip "192.168.1.72"   # Local testing
+  #rx_ip: &rx_ip "192.168.1.97"   # Pi1 
 
   endpoints:
   # Sent to pi
@@ -58,3 +59,10 @@ intervals:
   pi_position: 3
   motor_cmd: 4
   pi2_cmd: 5
+
+  # timeout
+  mac_hb_timeout_interval:   3
+  mac_cmd_timeout_interval: 10
+  pi2_hb_timeout_interval:   3
+
+
