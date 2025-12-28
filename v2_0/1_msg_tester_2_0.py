@@ -3,15 +3,15 @@
 # Test tool to send data to the Pi to test the inputs and logics
 import socket
 import time
-import data_mgr_module as dmm   # For parsing out the pi_config.yml
-import test_data_sender as tds  # to send data
-import yaml_data as yd          # parsed out yaml data for intervals, ports, etc
+import m_data_mgr_module as dmm   # For parsing out the pi_config.yml
+import m_test_data_sender as tds  # to send data
+import m_yaml_data as yd          # parsed out yaml data for intervals, ports, etc
 
 
 # Set if testing locally or on hardware
 # 0 = local
 # 1 = on hardware
-test_setting = 1
+test_setting = 0
 
 yaml_file_name = 'pi_config.yml'
 
@@ -47,14 +47,14 @@ def myfunction():
         current_time = time.monotonic()
 
         # JSON message generator
-        #nano_mssg = dmm.json_convert(tds.nano_to_pi(nano_mssg_ctr))
+        nano_mssg = dmm.json_convert(tds.nano_to_pi(nano_mssg_ctr))
         #elegoo_msg = dmm.json_convert(tds.elegoo_to_pi(elegoo_msg_ctr))
         mac_cmd_msg = dmm.json_convert(tds.mac_to_pi(mac_cmd_msg_ctr, cmd_dir))
         mac_heart_msg = dmm.json_convert(tds.mac_heartbeat(mac_heart_msg_ctr))
         pi2_heart_msg = dmm.json_convert(tds.pi2_heartbeat(pi2_heart_ctr))
 
         # Data send
-        #lst_t_nano, nano_mssg_ctr    =       yd.send_json(sock, current_time, lst_t_nano,      interval_list["nano_read_interval"],     sendpoints["nano"][0],      sendpoints["nano"][1],      nano_mssg, nano_mssg_ctr,      "nano")
+        lst_t_nano, nano_mssg_ctr    =       yd.send_json(sock, current_time, lst_t_nano,      interval_list["nano_read_interval"],     sendpoints["nano"][0],      sendpoints["nano"][1],      nano_mssg, nano_mssg_ctr,      "nano")
         #lst_t_elegoo, elegoo_msg_ctr =       yd.send_json(sock, current_time, lst_t_elegoo,    interval_list["elegoo_read_interval"],   sendpoints["elegoo"][0],    sendpoints["elegoo"][1],    elegoo_msg, elegoo_msg_ctr,    "elegoo")
         lst_t_mac_cmd, mac_cmd_msg_ctr =     yd.send_json(sock, current_time, lst_t_mac_cmd,   interval_list["mac_cmd_read_interval"],  sendpoints["mac_cmd"][0],   sendpoints["mac_cmd"][1],   mac_cmd_msg, mac_cmd_msg_ctr,  "cmd")
         lst_t_mac_pulse, mac_heart_msg_ctr = yd.send_json(sock, current_time, lst_t_mac_pulse, interval_list["mac_pulse_read_interval"],sendpoints["mac_pulse"][0], sendpoints["mac_pulse"][1], mac_heart_msg, mac_heart_msg_ctr, "mac_pulse")

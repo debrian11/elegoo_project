@@ -5,9 +5,9 @@ import os
 import select
 import json
 import time
-import data_mgr_module as data_mgr
-import data_responder_module as drm
-import yaml_data as yd
+import m_data_mgr_module as data_mgr
+import m_data_responder_module as drm
+import m_yaml_data as yd
 
 
 # Set if testing locally or on hardware
@@ -37,7 +37,7 @@ def myfunction():
     counter = 0
 
     f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr,  = data_mgr.initial_values()
-    mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv = data_mgr.initial_time_values()
+    mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned = data_mgr.initial_time_values()
     mac_pulse_mssg_id, pi2_pulse_mssg_id, nano_id, elegoo_id, mac_cmd_id = data_mgr.initial_mssg_id_values()
 
     # Parse the yaml
@@ -46,10 +46,13 @@ def myfunction():
 
     # Intialize RX and TX sockets
     link_checker = False
-    cmd_timeout = False
+    new_cmd = False
+    turning = False
+    done_turning = True
     sock_list = yd.assign_read_sockets(parsed_out_yaml, test_setting)
+    time.sleep(2)
     tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    mtr_cmd = drm.motor_cmd_UDP("STOP", 0)
+    mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
 
     print("connect to serial port")
     if test_setting == 1:
@@ -83,21 +86,21 @@ def myfunction():
                 f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_time, nano_id = data_mgr.nano_parser(data_to_json)
                 #print("NANO RXd", counter, data_to_json)
 
-            if src == "elegoo":
+            elif src == "elegoo":
                 r_motor, l_motor, elegoo_time, elegoo_id = data_mgr.elegoo_parser(data_to_json)
                 #print("ELEGOO RXd", counter, data_to_json)
 
-            if src == "mac_cmd":
+            elif src == "mac_cmd":
                 cmd, pwr, mac_cmd_time, mac_cmd_id = data_mgr.mac_parser(data_to_json)
                 last_mac_cmd_time_rcv = time.monotonic()
                 #print("MAC CMD", counter, data_to_json)
 
-            if src == "mac_pulse":
+            elif src == "mac_pulse":
                 mac_pulse_time_rvd, mac_pulse_mssg_id = data_mgr.read_mac_heartbeat(data_to_json)
                 last_mac_pulse_time_rcv = time.monotonic()
                 #print("MAC PULSE", counter, data_to_json)
         
-            if src == "pi2_pulse":
+            elif src == "pi2_pulse":
                 pi2_pulse_mssg_id, pi2_pulse_time_rvd = data_mgr.read_pi2_heartbeat(data_to_json)
                 #print("PI2_pulse", counter, data_to_json)
         # --- End Read ports --- #
@@ -105,32 +108,34 @@ def myfunction():
 
         # --- Mac laptop and cmd checker --- #
         link_checker = drm.mac_hb_checker(last_mac_pulse_time_rcv, current_time, interval_list["mac_hb_timeout"])
-        cmd_timeout = drm.cmd_timeout_checker(cmd, last_mac_cmd_time_rcv, current_time, interval_list["mac_cmd_timeout"])
+        new_cmd = drm.cmd_timeout_checker(cmd, last_mac_cmd_time_rcv, current_time, interval_list["mac_cmd_timeout"])
         # --- End Mac laptop and cmd checker --- #
         
         
         # --- Perform cmds based on link or cmd tieout --- #
         if link_checker is False:
-            mtr_cmd = drm.motor_cmd_UDP("STOP", 0)
+            mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
             if test_setting == 1:
                 elegoo_port.write((mtr_cmd + "\n").encode("utf-8"))
             
         elif link_checker is True:
-            if cmd_timeout is True:
-                mtr_cmd = drm.motor_cmd_UDP(cmd, pwr)
-                drm.uss_mover(f_uss, r_uss, l_uss, current_time)
-                drm.heading_keeper(head, current_time)
+            if new_cmd is True:
+                #mtr_cmd = drm.motor_cmd_UDP(cmd, pwr)
+                mtr_cmd, last_time_turned, done_turning, turning = drm.motor_cmd(cmd, pwr, turning, done_turning, f_uss, l_uss, r_uss, last_time_turned, current_time, mtr_cmd)
                 if test_setting == 1:
                     elegoo_port.write((mtr_cmd + "\n").encode("utf-8"))
 
-            elif cmd_timeout is False:
-                mtr_cmd = drm.motor_cmd_UDP("STOP", 0)
+            elif new_cmd is False:
+                mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
                 if test_setting == 1:
                     elegoo_port.write((mtr_cmd + "\n").encode("utf-8"))
 
-
-        print("Link = ", link_checker, "  Cmd timeout = ", cmd_timeout, "  MTR = ", mtr_cmd)
+        #print("Link = ", link_checker, "  Cmd timeout = ", new_cmd, "  MTR = ", mtr_cmd, "  turn delta", current_time - last_time_turned, "  done_turning", done_turning, "  turning", turning)
+        #print("MTR = ", mtr_cmd, "  turn delta", current_time - last_time_turned, "  done_turning", done_turning, "  turning", turning)
         # --- End Perform cmds based on link or cmd tieout --- #
+
+
+        time.sleep(0.001)
 
 if __name__ == "__main__":
     myfunction()

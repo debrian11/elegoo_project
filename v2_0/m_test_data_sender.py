@@ -11,12 +11,12 @@ import time
 def nano_to_pi(counter):
     json_data = {
     "source": "nano",
-    "time": time.time(),
+    "time": time.monotonic(),
     "mssg_id": counter ,
     "HEAD": counter,
-    "F_USS": counter + 5,
-    "L_USS": counter + 5,
-    "R_USS": counter + 5,
+    "F_USS": 10,
+    "L_USS": 109,
+    "R_USS": 10,
     "L_ENCD": counter + 5,
     "R_ENCD": counter + 5
     }
@@ -26,7 +26,7 @@ def nano_to_pi(counter):
 def elegoo_to_pi(counter):
     json_data = {
     "source": "elegoo",
-    "time": time.time(),
+    "time": time.monotonic(),
     "mssg_id": counter ,
     "L_MOTOR": counter + 3,
     "R_MOTOR": counter + 3
@@ -37,7 +37,7 @@ def elegoo_to_pi(counter):
 def mac_to_pi(counter, random_dir):
     json_data = {
     "source": "mac_cmd",
-    "time": time.time(),
+    "time": time.monotonic(),
     "mssg_id": counter ,
     "cmd": random_dir,
     "pwr": 100
@@ -48,7 +48,7 @@ def mac_to_pi(counter, random_dir):
 def mac_heartbeat(counter):
     json_data = {
     "source": "mac_pulse",
-    "time": time.time(),
+    "time": time.monotonic(),
     "mssg_id": counter ,
     "pulse": "qqq"
     }
@@ -59,7 +59,7 @@ def mac_heartbeat(counter):
 def pi2_heartbeat(counter):
     json_data = {
     "source": "pi2_pulse",
-    "time": time.time(),
+    "time": time.monotonic(),
     "mssg_id": counter ,
     "pulse": "qqq"
     }

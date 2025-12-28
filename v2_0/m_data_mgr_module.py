@@ -2,6 +2,12 @@
 import json
 import yaml
 
+
+# Module's purpose is to:
+# 1) Determine where the receiving JSON came from (i.e, Elegoo, Nano, Laptop, Pi)
+# 2) Parse out the JSON with respective parser then assign values in variables
+
+
 # --- Data formats --- #
 # Get the src of the json
 def json_reader(json_pkt: dict):
@@ -21,9 +27,9 @@ def parse_yaml(yaml_file_name: str) -> dict:
 
 # ------
 def initial_values():
-    f_uss =     0
-    r_uss =     0
-    l_uss =     0
+    f_uss =     None
+    r_uss =     None
+    l_uss =     None
     head =      0
     l_encd =    0
     r_encd =    0
@@ -42,7 +48,8 @@ def initial_time_values():
 
     last_mac_cmd_time_rcv = 0
     last_mac_pulse_time_rcv = 0
-    return mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv
+    last_time_turned = 0
+    return mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned
 
 def initial_mssg_id_values():
     mac_pulse_mssg_id = 0
