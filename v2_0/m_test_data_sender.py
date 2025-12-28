@@ -16,7 +16,7 @@ def nano_to_pi(counter):
     "HEAD": counter,
     "F_USS": 10,
     "L_USS": 109,
-    "R_USS": 10,
+    "R_USS": 1,
     "L_ENCD": counter + 5,
     "R_ENCD": counter + 5
     }
