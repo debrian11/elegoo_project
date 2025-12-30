@@ -61,6 +61,12 @@ intervals:
   motor_cmd: 4
   pi2_cmd: 5
 
+  # Motor response
+  f_uss_threshold: 5
+  l_uss_threshold: 5
+  r_uss_threshold: 5
+  turning_time_threshold: 0.1
+
   # timeout
   mac_hb_timeout_interval:   5
   mac_cmd_timeout_interval: 10

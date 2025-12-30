@@ -1,16 +1,16 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304. C0411
-import json
-import time
-import serial
-
-
 # Module is responsible for:
 # 1) Return true or false for the Heartbeat checkers
 #    - Mac cmd, Mac hb mssg, Pi hb mssg
 # 2) Motor cmds:
 #   - Have set values for movement
 #   - Check if turning or not
-#   - return the converted dictionary into a JSON dumps to 
+#   - return the converted dictionary into a JSON dumps
+
+import json
+import time
+import serial
+
 all_states = ["FWD", "LEFT", "RIGHT", "BACK", "STOP"]
 
 # Convertdirection cmd'd and pwr into motor json to Arduino
@@ -72,7 +72,9 @@ def uss_mover(f_uss: int, r_uss: int, l_uss: int,  cur_time: float):
 
     
 # Expected format for Arduino: { "L_DIR":0, "R_DIR":0, "L_PWM":50, "R_PWM":50 }
-def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int, l_uss: int, r_uss: int, last_time_turned: float, cur_time: float, motor_cmd: str):
+def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int, l_uss: int, r_uss: int, 
+              last_time_turned: float, cur_time: float, motor_cmd: str,
+              f_uss_threshold: int, l_uss_threshold: int, r_uss_threshold: int, turning_time_threshold: float):
     
     pwr_adjust = 1
     fwd_cmd =   { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust),        "R_PWM": pwr*(pwr_adjust) }
@@ -84,12 +86,6 @@ def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int,
     # comment 1 or 0 to print stuff
     print_stuff = 0
 
-    # USS Thresholds
-    f_uss_threshold = 5
-    l_uss_threshold = 5
-    r_uss_threshold = 5
-    turning_time_threshold = 10
-
     done_turning = cur_time - last_time_turned
     if done_turning >= turning_time_threshold:
         done_turning = True
@@ -100,7 +96,24 @@ def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int,
 
     # USS Check
     if f_uss is None or l_uss is None or r_uss is None:
-        # USS stuff isn't initialized yet, so don't do anyhting.
+        # USS stuff isn't initialized yet, but allow cmds to run
+        if print_stuff == 1:
+            print("not Turning", f_uss, l_uss, r_uss, cmd, turning, done_turning, motor_cmd)
+        if cmd in all_states:
+            if cmd == all_states[0]:    # FWD
+                motor_cmd = json.dumps(fwd_cmd)
+
+            elif cmd == all_states[1]:  # LEFT
+                motor_cmd = json.dumps(left_cmd)
+
+            elif cmd == all_states[2]:  # RIGHT
+                motor_cmd = json.dumps(right_cmd)
+
+            elif cmd == all_states[3]:  # BACK
+                motor_cmd = json.dumps(back_cmd)
+
+            elif cmd == all_states[4]:  # STOP
+                motor_cmd = json.dumps(stop_cmd)
         return motor_cmd, last_time_turned, done_turning, turning
 
     # If all 3 are not clear

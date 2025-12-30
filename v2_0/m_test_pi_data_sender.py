@@ -11,7 +11,6 @@ import time
 def nano_to_mac(counter):
     json_data = {
     "source": "sensors",
-    "time": time.time(),
     "mssg_id": counter ,
     "HEAD": counter + 5,
     "F_USS": counter + 5,
@@ -26,10 +25,9 @@ def nano_to_mac(counter):
 def elegoo_to_mac(counter):
     json_data = {
     "source": "motor",
-    "time": time.time(),
     "mssg_id": counter ,
-    "L_MOTOR": counter + 3,
-    "R_MOTOR": counter + 3
+    "L_motor": counter + 3,
+    "R_motor": counter + 3
     }
     return json_data
 
@@ -48,7 +46,6 @@ def pi_to_mac_position(counter):
 def pi_to_motor(counter, cmd: str, pwr: int):
     json_data = {
     "source": "motor_cmds",
-    "time": time.time(),
     "mssg_id": counter ,
     "L_MOTOR": counter,
     "R_MOTOR": counter,

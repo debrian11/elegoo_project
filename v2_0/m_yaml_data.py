@@ -39,6 +39,11 @@ def intervals_read_send(parsed_out_yaml: dict) -> dict:
     "motor_cmd_interval"        :        parsed_out_yaml["intervals"]["motor_cmd"],
     "pi2_cmd_interval"          :        parsed_out_yaml["intervals"]["pi2_cmd"],
 
+    "f_uss_threshold"           :        parsed_out_yaml["intervals"]["f_uss_threshold"],
+    "l_uss_threshold"           :        parsed_out_yaml["intervals"]["l_uss_threshold"],
+    "r_uss_threshold"           :        parsed_out_yaml["intervals"]["r_uss_threshold"],
+    "turn_time_threshold"       :        parsed_out_yaml["intervals"]["turning_time_threshold"],
+
     "mac_hb_timeout"            :        parsed_out_yaml["intervals"]["mac_hb_timeout_interval"],
     "mac_cmd_timeout"           :        parsed_out_yaml["intervals"]["mac_cmd_timeout_interval"],
     "pi2_hb_timeout"            :        parsed_out_yaml["intervals"]["pi2_hb_timeout_interval"]
@@ -59,9 +64,6 @@ def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
         "pi2_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"])
     } 
     return sendpoints
-
-
-
 
 def send_json(send_socket: socket, cur_time: float, last_time: float, timing_interval: float, send_ip: str, send_port: int, json_msg: str, counter: int, who_sent: str):
     if cur_time - last_time > timing_interval:

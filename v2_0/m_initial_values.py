@@ -1,5 +1,4 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304,C0411
-
 # This module stores the initial values for variables to initialize
 def initial_values():
     f_uss =     None

@@ -1,15 +1,20 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304, C0411. C0321
+# Description: Main python code for the Pi. Orchestrates the logic of the robot
+# Initializes sockets and serial ports depending on test configuration set in the SETTINGS section
+# Parses out UDP ports and/or serial ports into repsective parsers
+# Sends JSON message packets over serial / UDP for motor control
+
 import socket
 import serial
 import os
 import select
 import json
 import time
-import m_serial_handler as sh
-import m_data_mgr_module as data_mgr
-import m_data_responder_module as drm
-import m_yaml_data as yd
-import m_initial_values as iv
+import m_serial_handler         as sh       # Configures serial ports
+import m_data_mgr_module        as data_mgr # Manages parsers of received JSON packets depending on source
+import m_data_responder_module  as drm      # Manages responses to send
+import m_yaml_data              as yd       # Parses out yaml configuration file
+import m_initial_values         as iv       # Manages initial values
 
 # ------ SETTINGS ------- #
 # Set if testing locally or on hardware. This sets the IP for the socket
@@ -40,10 +45,12 @@ NANO_PORT = '/dev/arduino_nano'
 def myfunction():
     if print_stuff == 1: print("Starting script"); time.sleep(print_wait); print("Setting initial values"); time.sleep(print_wait)
 
+    # Initial Values
     f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr,  = iv.initial_values()
     mac_pulse_time_rvd, pi2_pulse_time_rvd, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned = iv.initial_time_values()
     mac_pulse_mssg_id, pi2_pulse_mssg_id, nano_id, elegoo_id, mac_cmd_id = iv.initial_mssg_id_values()
     link_checker, new_cmd, turning, done_turning = iv.intial_boolean_values()
+
     # --- CSV logger --- #
     if csv_logging == 1:
         csv_write = data_mgr.csv_logger(log_path)
@@ -109,8 +116,7 @@ def myfunction():
 
             if nano_setting == 0:
                 if src == "nano":
-                    f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_time, nano_id = data_mgr.nano_parser(data_to_json)
-                    #print("NANO RXd", data_to_json)
+                    f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id = data_mgr.nano_parser(data_to_json)
 
             #if src == "elegoo":
                 #r_motor, l_motor, elegoo_time, elegoo_id = data_mgr.elegoo_parser(data_to_json)
@@ -119,30 +125,24 @@ def myfunction():
             if src == "mac_cmd":
                 cmd, pwr, mac_cmd_time, mac_cmd_id = data_mgr.mac_parser(data_to_json)
                 last_mac_cmd_time_rcv = time.monotonic()
-                #print("MAC CMD", data_to_json)
 
             elif src == "mac_pulse":
                 mac_pulse_time_rvd, mac_pulse_mssg_id = data_mgr.read_mac_heartbeat(data_to_json)
                 last_mac_pulse_time_rcv = time.monotonic()
-                #print("MAC PULSE", data_to_json)
         
             elif src == "pi2_pulse":
                 pi2_pulse_mssg_id, pi2_pulse_time_rvd = data_mgr.read_pi2_heartbeat(data_to_json)
-                #print("PI2_pulse", data_to_json)
-        t1 = time.monotonic()
         # --- End Read UDP ports --- #
 
         # --- Read Serial Ports --- #
         # Elegoo
         if serial_port_setting == 1 or serial_port_setting == 3:
-            #elegoo_json = sh.readline_json(elegoo_port) ; print("ELEGOO: ", elegoo_json)
             elegoo_json, elegoo_ser_buffer = sh.read_json(elegoo_port, elegoo_ser_buffer)
             if isinstance(elegoo_json, dict):
                 r_motor, l_motor, elegoo_id = data_mgr.elegoo_parser(elegoo_json)
 
         # Nano
         if serial_port_setting == 2 or serial_port_setting == 3:
-            #nano_json = sh.readline_json(nano_port) ; print("NANO: ", nano_json)
             nano_json, nano_ser_buffer = sh.read_json(nano_port, nano_ser_buffer)
             if isinstance(nano_json, dict):
                 if nano_setting == 1:
@@ -151,29 +151,28 @@ def myfunction():
         # --- Mac laptop and cmd checker --- #
         link_checker = drm.mac_hb_checker(last_mac_pulse_time_rcv, current_time, interval_list["mac_hb_timeout"])
         new_cmd = drm.cmd_timeout_checker(cmd, last_mac_cmd_time_rcv, current_time, interval_list["mac_cmd_timeout"])
-        t2 = time.monotonic()
         # --- End Mac laptop and cmd checker --- #
         
         # --- Perform cmds based on link or cmd tieout --- #
         if link_checker is False:
             mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
             if serial_port_setting == 1 or serial_port_setting == 3:
-                #elegoo_port.write((mtr_cmd + "\n").encode("utf-8"))
                 sh.write_json(elegoo_port, mtr_cmd)
             
         elif link_checker is True:
             if new_cmd is True:
-                mtr_cmd, last_time_turned, done_turning, turning = drm.motor_cmd(cmd, pwr, turning, done_turning, f_uss, l_uss, r_uss, last_time_turned, current_time, mtr_cmd)
+                # f_uss_threshold: int, l_uss_threshold: int, r_uss_threshold: int, turning_time_threshold: float):
+                mtr_cmd, last_time_turned, done_turning, turning = drm.motor_cmd(cmd, pwr, turning, done_turning, f_uss, l_uss, r_uss, 
+                                                                                 last_time_turned, current_time, mtr_cmd, 
+                                                                                 interval_list["f_uss_threshold"], interval_list["l_uss_threshold"], 
+                                                                                 interval_list["r_uss_threshold"], interval_list["turn_time_threshold"])
                 if serial_port_setting == 1 or serial_port_setting == 3:
-                    #elegoo_port.write((mtr_cmd + "\n").encode("utf-8"))
                     sh.write_json(elegoo_port, mtr_cmd)
 
             elif new_cmd is False:
                 mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
                 if serial_port_setting == 1 or serial_port_setting == 3:
-                    #elegoo_port.write((mtr_cmd + "\n").encode("utf-8"))
                     sh.write_json(elegoo_port, mtr_cmd)
-        t3 = time.monotonic()
 
         # --- End Perform cmds based on link or cmd timeout --- #
         time.sleep(0.001)

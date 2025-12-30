@@ -1,5 +1,4 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
-
 # Test tool to send data to the Pi to test the inputs and logics
 import socket
 import time

@@ -1,15 +1,14 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304, C0411
-
-import serial
-import time
-import os
-import json
-
 #This module handles configuring the serial ports for the Arduino's that connect to the Pi.
 #  There are two Arduinos.
 #  1) Arduino Elegoo = handles motor pwm cmds
 #  2) Arduino Nano = handles sensors: Ultrasonic, Encoders, Magnometer 
 # Handles the reading / writing to those ports
+
+import serial
+import time
+import os
+import json
 
 # Setting up the serial ports        
 def serial_port_setup(port_name: str, baud_rate: int):
@@ -33,8 +32,6 @@ def write_json(serial_port, mtr_cmd: str):
 # This actually doesn't work because the serial lines don't show up as complete JSONs to parse.
 def readline_json(serial_port):
     raw_serial_input = serial_port.readline().decode("utf-8", errors="ignore").strip()
-    #if raw_serial_input:
-    #    return json.loads(raw_serial_input)
     return raw_serial_input
 
 # This method reads bytes vs a whole line. Reading bytes will be more robust for error handling
