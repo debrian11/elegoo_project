@@ -11,7 +11,6 @@ import time
 def nano_to_pi(counter):
     json_data = {
     "source": "nano",
-    "time": time.monotonic(),
     "mssg_id": counter ,
     "HEAD": counter,
     "F_USS": 10,
@@ -26,7 +25,6 @@ def nano_to_pi(counter):
 def elegoo_to_pi(counter):
     json_data = {
     "source": "elegoo",
-    "time": time.monotonic(),
     "mssg_id": counter ,
     "L_MOTOR": counter + 3,
     "R_MOTOR": counter + 3

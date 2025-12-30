@@ -17,14 +17,12 @@ def initial_values():
 def initial_time_values():
     mac_pulse_time_rvd = 0
     pi2_pulse_time_rvd = 0
-    nano_time = 0
-    elegoo_time = 0
     mac_cmd_time = 0
 
     last_mac_cmd_time_rcv = 0
     last_mac_pulse_time_rcv = 0
     last_time_turned = 0
-    return mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned
+    return mac_pulse_time_rvd, pi2_pulse_time_rvd, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned
 
 def initial_mssg_id_values():
     mac_pulse_mssg_id = 0

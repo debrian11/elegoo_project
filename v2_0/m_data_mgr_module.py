@@ -35,17 +35,15 @@ def nano_parser(json_pkt: dict):
     head = json_pkt.get("HEAD", 0)
     l_encd = json_pkt.get("L_ENCD", 0)
     r_encd = json_pkt.get("R_ENCD", 0)
-    nano_time = json_pkt.get("time", 0)
     nano_id = json_pkt.get("mssg_id", 0)
-    return f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_time, nano_id
+    return f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id
 
 # Incoming Motor TM
 def elegoo_parser(json_pkt: dict):
-    r_motor = json_pkt.get("R_MOTOR", 0)
-    l_motor = json_pkt.get("L_MOTOR", 0)
-    elegoo_time = json_pkt.get("time", 0)
+    r_motor = json_pkt.get("R_motor", 0)
+    l_motor = json_pkt.get("L_motor", 0)
     elegoo_id = json_pkt.get("mssg_id", 0)
-    return r_motor, l_motor, elegoo_time, elegoo_id
+    return r_motor, l_motor, elegoo_id
 
 # Parse out the two values, CMD & PWR, from Mac into useful varaibles (int)
 def mac_parser(json_pkt: dict):

@@ -41,7 +41,7 @@ def myfunction():
     if print_stuff == 1: print("Starting script"); time.sleep(print_wait); print("Setting initial values"); time.sleep(print_wait)
 
     f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr,  = iv.initial_values()
-    mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned = iv.initial_time_values()
+    mac_pulse_time_rvd, pi2_pulse_time_rvd, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned = iv.initial_time_values()
     mac_pulse_mssg_id, pi2_pulse_mssg_id, nano_id, elegoo_id, mac_cmd_id = iv.initial_mssg_id_values()
     link_checker, new_cmd, turning, done_turning = iv.intial_boolean_values()
     # --- CSV logger --- #
@@ -81,6 +81,7 @@ def myfunction():
         nano_port = sh.serial_port_setup(port_name=NANO_PORT, baud_rate=115200)
         print("Connecting to both Serial Ports")
         print(nano_port); print(elegoo_port)
+        time.sleep(0.5)
     # --- End Initialize Serial Ports --- #
 
     # --- ** Main Loop ** --- #
@@ -136,14 +137,16 @@ def myfunction():
         if serial_port_setting == 1 or serial_port_setting == 3:
             #elegoo_json = sh.readline_json(elegoo_port) ; print("ELEGOO: ", elegoo_json)
             elegoo_json, elegoo_ser_buffer = sh.read_json(elegoo_port, elegoo_ser_buffer)
-            r_motor, l_motor, elegoo_time, elegoo_id = data_mgr.elegoo_parser(elegoo_json)
+            if isinstance(elegoo_json, dict):
+                r_motor, l_motor, elegoo_id = data_mgr.elegoo_parser(elegoo_json)
 
         # Nano
         if serial_port_setting == 2 or serial_port_setting == 3:
             #nano_json = sh.readline_json(nano_port) ; print("NANO: ", nano_json)
             nano_json, nano_ser_buffer = sh.read_json(nano_port, nano_ser_buffer)
-            if nano_setting == 1:
-                f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_time, nano_id = data_mgr.nano_parser(nano_json)
+            if isinstance(nano_json, dict):
+                if nano_setting == 1:
+                    f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id = data_mgr.nano_parser(nano_json)
 
         # --- Mac laptop and cmd checker --- #
         link_checker = drm.mac_hb_checker(last_mac_pulse_time_rcv, current_time, interval_list["mac_hb_timeout"])
@@ -172,8 +175,6 @@ def myfunction():
                     sh.write_json(elegoo_port, mtr_cmd)
         t3 = time.monotonic()
 
-        if print_stuff == 1: print("MTR = ", mtr_cmd, " loop time: ", t3 - t0, " cmd ", cmd, "  pwr" , pwr)
-        #if print_stuff == 1: print("F_USS: ", f_uss, " | L_USS : ", l_uss, " | R_USS : ", r_uss)
         # --- End Perform cmds based on link or cmd timeout --- #
         time.sleep(0.001)
 
