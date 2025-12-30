@@ -1,12 +1,14 @@
-#pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
+#pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304,C0411
 import json
 import yaml
-
+import serial
+import time
+import os
+import csv
 
 # Module's purpose is to:
 # 1) Determine where the receiving JSON came from (i.e, Elegoo, Nano, Laptop, Pi)
 # 2) Parse out the JSON with respective parser then assign values in variables
-
 
 # --- Data formats --- #
 # Get the src of the json
@@ -24,40 +26,6 @@ def parse_yaml(yaml_file_name: str) -> dict:
     with open(yaml_file_name, 'r') as file:
         read_yaml = yaml.full_load(file)
     return read_yaml
-
-# ------
-def initial_values():
-    f_uss =     None
-    r_uss =     None
-    l_uss =     None
-    head =      0
-    l_encd =    0
-    r_encd =    0
-    r_motor =   0
-    l_motor =   0
-    cmd =       "STOP"
-    pwr =       0
-    return f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr
-
-def initial_time_values():
-    mac_pulse_time_rvd = 0
-    pi2_pulse_time_rvd = 0
-    nano_time = 0
-    elegoo_time = 0
-    mac_cmd_time = 0
-
-    last_mac_cmd_time_rcv = 0
-    last_mac_pulse_time_rcv = 0
-    last_time_turned = 0
-    return mac_pulse_time_rvd, pi2_pulse_time_rvd, nano_time, elegoo_time, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned
-
-def initial_mssg_id_values():
-    mac_pulse_mssg_id = 0
-    pi2_pulse_mssg_id = 0
-    nano_id = 0
-    elegoo_id = 0
-    mac_cmd_id = 0
-    return mac_pulse_mssg_id, pi2_pulse_mssg_id, nano_id, elegoo_id, mac_cmd_id
 
 # Incoming Nano TM
 def nano_parser(json_pkt: dict):
@@ -104,3 +72,13 @@ def motor_cmder(motor_cmd: dict):
     output = json.dumps(motor_cmd)
     encoded_packet = output.encode("utf-8")
     return encoded_packet
+
+def csv_logger(log_path: str):
+    os.makedirs("csv_files", exist_ok=True)
+    new_file = not os.path.exists(log_path) or os.path.getsize(log_path) == 0
+    csv_log_file = open(log_path, "a", newline="") #"a" = append
+    csv_writer = csv.writer(csv_log_file) # Create writer object tied to that file
+    if new_file:
+        csv_writer.writerow(["timestamp","F_USS","L_USS","R_USS","L_ENCD","R_ENCD","L_ENCD_COV","R_ENCD_COV","HEAD"])
+    return csv_writer
+

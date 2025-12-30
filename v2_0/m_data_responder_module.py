@@ -73,6 +73,7 @@ def uss_mover(f_uss: int, r_uss: int, l_uss: int,  cur_time: float):
     
 # Expected format for Arduino: { "L_DIR":0, "R_DIR":0, "L_PWM":50, "R_PWM":50 }
 def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int, l_uss: int, r_uss: int, last_time_turned: float, cur_time: float, motor_cmd: str):
+    
     pwr_adjust = 1
     fwd_cmd =   { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust),        "R_PWM": pwr*(pwr_adjust) }
     left_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust)*(0.5),  "R_PWM": pwr*(pwr_adjust) }

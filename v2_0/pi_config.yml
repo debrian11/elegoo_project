@@ -47,12 +47,13 @@ network:
       port: 5014
 
 intervals:
-
-  nano_read:      0.5
+  # 0.1 = 100 ms = 10 Hz
+  # 0.01 = 10 ms = 100 Hz
+  nano_read:      0.1
   elegoo_read:    0.1
-  mac_cmd_read:   0.2
-  mac_pulse_read: 0.3
-  pi2_pulse_read: 0.4
+  mac_cmd_read:   0.1
+  mac_pulse_read: 1
+  pi2_pulse_read: 1
 
   nano_send: 1
   elegoo_send: 2
@@ -61,8 +62,8 @@ intervals:
   pi2_cmd: 5
 
   # timeout
-  mac_hb_timeout_interval:   3
+  mac_hb_timeout_interval:   5
   mac_cmd_timeout_interval: 10
-  pi2_hb_timeout_interval:   3
+  pi2_hb_timeout_interval:   5
 
 

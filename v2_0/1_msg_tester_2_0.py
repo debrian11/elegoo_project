@@ -7,11 +7,9 @@ import m_data_mgr_module as dmm   # For parsing out the pi_config.yml
 import m_test_data_sender as tds  # to send data
 import m_yaml_data as yd          # parsed out yaml data for intervals, ports, etc
 
-
-# Set if testing locally or on hardware
-# 0 = local
-# 1 = on hardware
-test_setting = 0
+# Set if testing locally or on hardware. This sets the IP for the socket
+# [0] = local IP   |    [1] = Pi IP
+ip_setting = 0
 
 yaml_file_name = 'pi_config.yml'
 
@@ -22,7 +20,7 @@ def myfunction():
 
     # Port setup
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sendpoints = yd.send_ports(parsed_out_yaml, test_setting)
+    sendpoints = yd.send_ports(parsed_out_yaml, ip_setting)
 
     # Setup initial time
     lst_t_nano = time.monotonic()
@@ -45,10 +43,9 @@ def myfunction():
 
     while True:
         current_time = time.monotonic()
-
         # JSON message generator
         nano_mssg = dmm.json_convert(tds.nano_to_pi(nano_mssg_ctr))
-        #elegoo_msg = dmm.json_convert(tds.elegoo_to_pi(elegoo_msg_ctr))
+        elegoo_msg = dmm.json_convert(tds.elegoo_to_pi(elegoo_msg_ctr))
         mac_cmd_msg = dmm.json_convert(tds.mac_to_pi(mac_cmd_msg_ctr, cmd_dir))
         mac_heart_msg = dmm.json_convert(tds.mac_heartbeat(mac_heart_msg_ctr))
         pi2_heart_msg = dmm.json_convert(tds.pi2_heartbeat(pi2_heart_ctr))
@@ -60,9 +57,7 @@ def myfunction():
         lst_t_mac_pulse, mac_heart_msg_ctr = yd.send_json(sock, current_time, lst_t_mac_pulse, interval_list["mac_pulse_read_interval"],sendpoints["mac_pulse"][0], sendpoints["mac_pulse"][1], mac_heart_msg, mac_heart_msg_ctr, "mac_pulse")
         lst_t_pi2_pulse, pi2_heart_ctr =     yd.send_json(sock, current_time, lst_t_pi2_pulse, interval_list["pi2_pulse_read"],         sendpoints["pi2_pulse"][0], sendpoints["pi2_pulse"][1], pi2_heart_msg, pi2_heart_ctr, "pi2_pulse")
 
-        # Sleep to prevent max speed
-        time.sleep(0.001)
+        time.sleep(0.001) # Sleep to prevent max speed
     
-
 if __name__ == "__main__":
     myfunction()
