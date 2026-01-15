@@ -1,50 +1,41 @@
 network:
-  rx_ip_local: &rx_ip "192.168.1.72"   # Local testing
-  #rx_ip: &rx_ip "192.168.1.97"   # Pi1 
-
   endpoints:
   # Sent to pi
     nano_to_pi:
-      ip: *rx_ip
       port: 5005
 
     elegoo_to_pi:
-      ip: *rx_ip
       port: 5006
 
     mac_cmd:
-      ip: *rx_ip
       port: 5007
 
     mac_pulse:
-      ip: *rx_ip
       port: 5008
 
     pi2_pulse:
-      ip: *rx_ip
       port: 5009
 
 
   # Sent from pi
     nano_to_mac:
-      ip: *rx_ip
       port: 5010
 
     elegoo_to_mac:
-      ip: *rx_ip
       port: 5011
 
     pi_to_mac_position:
-      ip: *rx_ip
       port: 5012
 
     pi_to_motor:
-      ip: *rx_ip
       port: 5013
 
     pi_to_pi2:
-      ip: *rx_ip
       port: 5014
+
+    pi_to_mac_vid:
+      port: 5015
+
 
 intervals:
   # 0.1 = 100 ms = 10 Hz

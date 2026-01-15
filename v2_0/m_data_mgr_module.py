@@ -40,8 +40,8 @@ def nano_parser(json_pkt: dict):
 
 # Incoming Motor TM
 def elegoo_parser(json_pkt: dict):
-    r_motor = json_pkt.get("R_MOTOR", 0)
-    l_motor = json_pkt.get("L_MOTOR", 0)
+    r_motor = json_pkt.get("R_motor", 0)
+    l_motor = json_pkt.get("L_motor", 0)
     elegoo_id = json_pkt.get("mssg_id", 0)
     return r_motor, l_motor, elegoo_id
 

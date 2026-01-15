@@ -12,6 +12,11 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QWidget, QMainWindow)
 
+# csv
+log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
+# VIDEO STREAM CMD: ffplay -fflags nobuffer -flags low_delay -framedrop -vf setpts=0 udp://192.168.1.72:5015
+
+
 class CmdGUI(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -27,7 +32,7 @@ class CmdGUI(QMainWindow):
         self.tm_timer.start(50) # ms   
 
         # TX Sockets
-        ip_setting = 0
+        ip_setting = 1 # 0 = Local | 1 = Pi
         self.sendpoints = yd.send_ports(self.parsed_out_yml, ip_setting)
         self.interval_list = yd.intervals_read_send(self.parsed_out_yml)
         self.pi1_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

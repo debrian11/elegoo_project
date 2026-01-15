@@ -70,7 +70,7 @@ def read_tm_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
 # Send TM data from Pi
 def send_tm_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
     if test_setting == 1:
-        tx_ip = "192.168.1.97" # pi ip
+        tx_ip = "192.168.1.72" # laptop ip
     else:
         tx_ip = "192.168.1.72" # laptop ip
 
@@ -79,7 +79,8 @@ def send_tm_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
         "elegoo_to_mac"          : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_mac"]["port"]),
         "pi_to_mac_positions"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_mac_position"]["port"]),
         "pi_to_motor"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_motor"]["port"]),
-        "pi_to_pi2"              : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_pi2"]["port"])
+        "pi_to_pi2"              : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_pi2"]["port"]),
+        "pi_to_mac_vid"          : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_mac_vid"]["port"])
     } 
     return sendpoints
 

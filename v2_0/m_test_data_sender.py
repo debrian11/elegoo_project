@@ -26,8 +26,8 @@ def elegoo_to_pi(counter):
     json_data = {
     "source": "elegoo",
     "mssg_id": counter ,
-    "L_MOTOR": counter + 3,
-    "R_MOTOR": counter + 3
+    "L_motor": counter + 3,
+    "R_motor": counter + 3
     }
     return json_data
 
