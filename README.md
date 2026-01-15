@@ -5,14 +5,14 @@ This project implements a small robot car built on the **ELEGOO Smart Robot Car 
 
 
 <p align="center">
-  <img src="/Pi_Bot_Control/pi_arduino_bot.jpg" alt="Pi–Arduino Robot Car" width="500"><br>
+  <img src="v1_0/Pi_Bot_Control/pi_arduino_bot.jpg" alt="Pi–Arduino Robot Car" width="500"><br>
   <i> P.A.R.C </i>
 </p>
 
 ## Architecture  
 
 <p align="center">
-  <img src="/Motor_Sensor_Control/blockdiagram.png" alt="Pi–Arduino Robot Block Diagram" width="700"><br>
+  <img src="v1_0/Motor_Sensor_Control/blockdiagram.png" alt="Pi–Arduino Robot Block Diagram" width="700"><br>
   <i> Connectivity Diagram </i>
 </p>
 
@@ -24,41 +24,41 @@ This project implements a small robot car built on the **ELEGOO Smart Robot Car 
 
 ### Raspberry Pi
 - Raspberry Pi OS
-- Runs a Docker container that hosts python scripts to control and monitor motor and sensor hardware and report telemetry to the laptop.
+- Edxecutes a python scripts to control and monitor motor and sensor hardware and report telemetry to the laptop.
 - Basic obstacle avoidance by constantly checking ultrasonic distance then commanding motors a direction opposite of detected object
 - Streams USB camera over unicast TCP to control laptop. Multicast will be used if more than 1 client in the future subscribes.
 - udev rules set for each Arduino so that every time container or Pi is rebooted, consistent port mapping
+- 2.0 improvements include testability of python code locally with test scripts and gui before loading on hardware
 
 ### Control Laptop
-- Runs a Tkinter GUI to send commands, monitor telemetry, and draws a block occupancy map of where robot has been. 
+- Runs a Tkinter GUI to send commands, monitor telemetry, and draws a block occupancy map of where robot has been.
+- 2.0 Improvement utilizes Qt5 and code cleanup.
 
 <p align="center">
-  <img src="/Control_GUI/running_gui.png" alt="GUI" width="700"><br>
+  <img src="v1_0/Control_GUI/running_gui.png" alt="GUI" width="700"><br>
   <i> Running GUI</i>
 </p>
 
 ## Repository Structure
-elegoo_project/  
--- Motor_Sensor_Control/  
----- main_elegoo_cpp6/  
----- main_nano_cpp5/  
----- magnometer_setup  
+v2_0/
+  scripts
 
--- Pi_Bot_Control/  
----- (Pi Files)  
+v1_0/
+  elegoo_project/  
+  -- Motor_Sensor_Control/  
+  ---- main_elegoo_cpp6/  
+  ---- main_nano_cpp5/  
+  ---- magnometer_setup  
 
--- Control_GUI/  
----- mac_gui_X.X.py  
+  -- Pi_Bot_Control/  
+  ---- (Pi Files)  
 
--- Arduino_Test_Scripts/  
----- elegoo_test/  
----- nano_test/  
+  -- Control_GUI/  
+  ---- mac_gui_X.X.py  
 
-
-## Next Steps (as of 10/22/2025)
-- Add ability for GUI to send coordinates to robot to navigate to. The robot has rough data of where it's been and how far it's gone (rough is probably an understatement) so this can data can be used to approximate where to go given a set of coordinates.
-- Add second Pi Arduino Bot to follow the main bot given the mapping data main bot sends
-- Vision based navigation
+  -- Arduino_Test_Scripts/  
+  ---- elegoo_test/  
+  ---- nano_test/  
 
 
 ## Hardware Requirements
