@@ -36,7 +36,7 @@ This project implements a small robot car built on the **ELEGOO Smart Robot Car 
 
 <p align="center">
   <img src="v1_0/Control_GUI/running_gui.png" alt="GUI" width="700"><br>
-  <i> Running GUI</i>
+  <i> Running GUI (v1_0)</i>
 </p>
 
 ## Repository Structure
