@@ -35,6 +35,10 @@ print_stuff = 1; print_wait = 0.1
 # Set this to enable commanding motors based on Sensor data from UDP Test Tool or Nano HW
 # [0] = UDP Test Tool   |    [1] = Nano HW
 nano_setting = 0
+
+# Set this to enable test Elegoo or HW
+# [0] = UDP Test Tool   |    [1] = Elegoo HW
+elegoo_setting = 0
 # ------ end SETTINGS ---- #
 
 yaml_file_name = 'pi_config.yml'
@@ -62,20 +66,24 @@ def myfunction():
     # --- End Parse the yaml --- #
 
     # --- Intialize RX and TX sockets --- #
-    if print_stuff == 1: print("Setting up sockets"); time.sleep(print_wait)
+    if print_stuff == 1: print("Setting Read sockets"); time.sleep(print_wait)
     sock_list = yd.assign_read_sockets(parsed_out_yaml, ip_setting)
-    time.sleep(2)
+    time.sleep(1)
+    if print_stuff == 1: print("Setting TX sockets"); time.sleep(print_wait)
     tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    tm_sendpoints = yd.send_tm_ports(parsed_out_yaml, ip_setting)
+    time.sleep(1)
+
     mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
     # --- End Intialize RX and TX sockets --- #
 
     # --- Initialize Serial Ports --- #
     elegoo_ser_buffer = ""
     nano_ser_buffer = ""
-    if print_stuff == 1:
-        print("Connecting to serial port"); time.sleep(print_wait)
+    if serial_port_setting == 0:
+        print("Skipping serial setup")
 
-    if serial_port_setting == 1:
+    elif serial_port_setting == 1:
         elegoo_port = sh.serial_port_setup(port_name=ELEGOO_PORT, baud_rate=115200)
         print("Connecting to both Nano Port"); print(elegoo_port)
 
@@ -117,18 +125,24 @@ def myfunction():
             if nano_setting == 0:
                 if src == "nano":
                     f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id = data_mgr.nano_parser(data_to_json)
+                    #print("NANO-UDP :", data_to_json)
+                    tx_socket.sendto(last_pkt, (tm_sendpoints["nano_to_mac"][0], tm_sendpoints["nano_to_mac"][1]))
 
-            #if src == "elegoo":
-                #r_motor, l_motor, elegoo_time, elegoo_id = data_mgr.elegoo_parser(data_to_json)
-                ##print("ELEGOO RXd", data_to_json)
+            if elegoo_setting == 0:
+                if src == "elegoo":
+                    r_motor, l_motor, elegoo_id = data_mgr.elegoo_parser(data_to_json)
+                    #print("ELEGOO RXd", data_to_json)
+                    tx_socket.sendto(last_pkt, (tm_sendpoints["elegoo_to_mac"][0], tm_sendpoints["elegoo_to_mac"][1]))
 
             if src == "mac_cmd":
                 cmd, pwr, mac_cmd_time, mac_cmd_id = data_mgr.mac_parser(data_to_json)
                 last_mac_cmd_time_rcv = time.monotonic()
+                #print("mac_cmd", data_to_json)
 
             elif src == "mac_pulse":
                 mac_pulse_time_rvd, mac_pulse_mssg_id = data_mgr.read_mac_heartbeat(data_to_json)
                 last_mac_pulse_time_rcv = time.monotonic()
+                #print("mac_pulse", data_to_json)
         
             elif src == "pi2_pulse":
                 pi2_pulse_mssg_id, pi2_pulse_time_rvd = data_mgr.read_pi2_heartbeat(data_to_json)
@@ -153,7 +167,7 @@ def myfunction():
         new_cmd = drm.cmd_timeout_checker(cmd, last_mac_cmd_time_rcv, current_time, interval_list["mac_cmd_timeout"])
         # --- End Mac laptop and cmd checker --- #
         
-        # --- Perform cmds based on link or cmd tieout --- #
+        # --- Perform cmds based on link or cmd timeout --- #
         if link_checker is False:
             mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
             if serial_port_setting == 1 or serial_port_setting == 3:
@@ -173,8 +187,8 @@ def myfunction():
                 mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
                 if serial_port_setting == 1 or serial_port_setting == 3:
                     sh.write_json(elegoo_port, mtr_cmd)
-
         # --- End Perform cmds based on link or cmd timeout --- #
+
         time.sleep(0.001)
 
 if __name__ == "__main__":

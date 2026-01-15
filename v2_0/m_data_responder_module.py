@@ -18,7 +18,7 @@ def mac_hb_checker(mac_pulse_time_rvd: float, current_time: float, hb_timeout_in
     if isinstance(mac_pulse_time_rvd, float):
         if current_time - mac_pulse_time_rvd > hb_timeout_interval:
             return False
-        if current_time - mac_pulse_time_rvd < hb_timeout_interval:
+        elif current_time - mac_pulse_time_rvd < hb_timeout_interval:
             #print(current_time - mac_pulse_time_rvd)
             return True
 
@@ -64,10 +64,6 @@ def fallback_motor_cmd(cmd: str, pwr: int) -> str:
         
 
 def heading_keeper(head: float, cur_time: float): 
-    pass
-
-# Defines USS movement logics
-def uss_mover(f_uss: int, r_uss: int, l_uss: int,  cur_time: float):
     pass
 
     
@@ -139,7 +135,7 @@ def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int,
                 return motor_cmd, last_time_turned, done_turning, turning
             return motor_cmd, last_time_turned, done_turning, turning
 
-        if r_uss > l_uss:
+        elif r_uss > l_uss:
             if done_turning is True:
                 motor_cmd = json.dumps(left_cmd)
                 turning = True

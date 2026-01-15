@@ -1,12 +1,14 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304
 import socket
 
+# --- Read data coming into Pi. --- 
+# #Used by Pi itself
 def assign_read_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
     all_sockets = {}
     if test_setting == 1:
-        rx_ip = "192.168.1.97" # pi ip
+        rx_ip = "0.0.0.0" # pi ip
     else:
-        rx_ip = "192.168.1.72" # laptop ip
+        rx_ip = "0.0.0.0" # laptop ip
     endpoints = {
         "nano"      : (rx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_pi"]["port"]),
         "elegoo"    : (rx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
@@ -23,6 +25,65 @@ def assign_read_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
         all_sockets[name] = read_socket
     sock_list = list(all_sockets.values())
     return sock_list
+
+# Send data going into Pi. Used by GUI and Test Script
+def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
+    if test_setting == 1:
+        tx_ip = "192.168.1.97" # pi ip
+    else:
+        tx_ip = "192.168.1.72" # laptop ip
+
+    sendpoints = {
+        "nano"      : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_pi"]["port"]),
+        "elegoo"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
+        "mac_cmd"   : (tx_ip, parsed_out_yaml["network"]["endpoints"]["mac_cmd"]["port"]),
+        "mac_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["mac_pulse"]["port"]),
+        "pi2_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"])
+    } 
+    return sendpoints
+# --- Read data coming into Pi. --- 
+
+# --- Read TM data from Pi --- 
+def read_tm_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
+    all_sockets = {}
+    if test_setting == 1:
+        tx_ip = "0.0.0.0" # pi ip
+    else:
+        tx_ip = "0.0.0.0" # laptop ip
+    endpoints = {
+        "nano_to_mac"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_mac"]["port"]),
+        "elegoo_to_mac"          : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_mac"]["port"]),
+        "pi_to_mac_positions"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_mac_position"]["port"]),
+        "pi_to_motor"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_motor"]["port"]),
+        "pi_to_pi2"              : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_pi2"]["port"])
+    } 
+
+    # Create read sockets for each port
+    for name, (ip, port) in endpoints.items():
+        read_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        read_socket.bind((ip, port))
+        read_socket.setblocking(False)
+        all_sockets[name] = read_socket
+    sock_list = list(all_sockets.values())
+    return sock_list
+
+# Send TM data from Pi
+def send_tm_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
+    if test_setting == 1:
+        tx_ip = "192.168.1.97" # pi ip
+    else:
+        tx_ip = "192.168.1.72" # laptop ip
+
+    sendpoints = {
+        "nano_to_mac"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_mac"]["port"]),
+        "elegoo_to_mac"          : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_mac"]["port"]),
+        "pi_to_mac_positions"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_mac_position"]["port"]),
+        "pi_to_motor"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_motor"]["port"]),
+        "pi_to_pi2"              : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_pi2"]["port"])
+    } 
+    return sendpoints
+
+# --- Used to send data out of Pi --- # --- Used to send data out of Pi --- 
 
 
 def intervals_read_send(parsed_out_yaml: dict) -> dict:
@@ -50,25 +111,10 @@ def intervals_read_send(parsed_out_yaml: dict) -> dict:
     }
     return interval_list
 
-def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
-    if test_setting == 1:
-        tx_ip = "192.168.1.97" # pi ip
-    else:
-        tx_ip = "192.168.1.72" # laptop ip
-
-    sendpoints = {
-        "nano"      : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_pi"]["port"]),
-        "elegoo"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
-        "mac_cmd"   : (tx_ip, parsed_out_yaml["network"]["endpoints"]["mac_cmd"]["port"]),
-        "mac_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["mac_pulse"]["port"]),
-        "pi2_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"])
-    } 
-    return sendpoints
-
 def send_json(send_socket: socket, cur_time: float, last_time: float, timing_interval: float, send_ip: str, send_port: int, json_msg: str, counter: int, who_sent: str):
     if cur_time - last_time > timing_interval:
         send_socket.sendto(json_msg, (send_ip, send_port))
         last_time = cur_time
         counter += 1
-        print(who_sent, json_msg)
+        #print(who_sent, json_msg)
     return last_time, counter

@@ -1,13 +1,7 @@
-import json
+all_states = ["FWD", "LEFT", "RIGHT", "BACK", "STOP"]
+btn_list = []
 
-buffer = '{"mssg_id":993,"F_USS":12,"L_USS":16,"R_USS":89,"L_ENCD":315,"R_ENCD":52}\n'
+for i, btn_name in enumerate(all_states):
+    btn_list.append(btn_name)
 
-line, buffer = buffer.split("\n", 1)
-print(len(line))
-print(line)
-line = line.strip()
-print(len(line))
-print(line)
-line += ""
-print(len(line))
-print(line)
+print(btn_list)

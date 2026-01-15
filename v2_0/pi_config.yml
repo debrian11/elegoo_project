@@ -52,7 +52,7 @@ intervals:
   nano_read:      0.1
   elegoo_read:    0.1
   mac_cmd_read:   0.1
-  mac_pulse_read: 1
+  mac_pulse_read: 1000 # ms
   pi2_pulse_read: 1
 
   nano_send: 1
