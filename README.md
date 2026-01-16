@@ -1,5 +1,5 @@
 # Pi–Arduino Robot Car
-*A Pi Aurduino Robot that navigates, maps, and streams video.*
+*A Pi Aurduino Robot that navigates, maps, and streams video to other devices.*
 
 This project implements a small robot car built on the **ELEGOO Smart Robot Car Kit V4.0**, integrating a **Raspberry Pi** and **two Arduino microcontrollers**.
 
