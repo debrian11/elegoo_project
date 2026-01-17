@@ -14,7 +14,8 @@ def assign_read_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
         "elegoo"    : (rx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
         "mac_cmd"   : (rx_ip, parsed_out_yaml["network"]["endpoints"]["mac_cmd"]["port"]),
         "mac_pulse" : (rx_ip, parsed_out_yaml["network"]["endpoints"]["mac_pulse"]["port"]),
-        "pi2_pulse" : (rx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"])
+        "pi2_pulse" : (rx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"]),
+        "vid_cmd"   : (rx_ip, parsed_out_yaml["network"]["endpoints"]["vid_cmd"]["port"])
     } 
 
     # Create read sockets for each port
@@ -38,7 +39,9 @@ def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
         "elegoo"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
         "mac_cmd"   : (tx_ip, parsed_out_yaml["network"]["endpoints"]["mac_cmd"]["port"]),
         "mac_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["mac_pulse"]["port"]),
-        "pi2_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"])
+        "pi2_pulse" : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"]),
+        "vid_cmd"   : (tx_ip, parsed_out_yaml["network"]["endpoints"]["vid_cmd"]["port"])
+
     } 
     return sendpoints
 # --- Read data coming into Pi. --- 
@@ -55,7 +58,8 @@ def read_tm_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
         "elegoo_to_mac"          : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_mac"]["port"]),
         "pi_to_mac_positions"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_mac_position"]["port"]),
         "pi_to_motor"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_motor"]["port"]),
-        "pi_to_pi2"              : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_pi2"]["port"])
+        "pi_to_pi2"              : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_pi2"]["port"]),
+        "vid_cmd"                : (tx_ip, parsed_out_yaml["network"]["endpoints"]["vid_cmd"]["port"])
     } 
 
     # Create read sockets for each port

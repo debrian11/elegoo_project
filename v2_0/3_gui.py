@@ -5,17 +5,19 @@ import socket
 import select
 import sys
 import time
+import subprocess
 import m_data_mgr_module as dmm
 import m_yaml_data as yd
 
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QProcess
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QWidget, QMainWindow)
 
 # csv
 log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
-# VIDEO STREAM CMD: ffplay -fflags nobuffer -flags low_delay -framedrop -vf setpts=0 udp://192.168.1.72:5015
-
+ip_setting = 1 # 0 = Local | 1 = Pi
+vid_ip = "192.168.1.72"
+vid_port = 5015
 
 class CmdGUI(QMainWindow):
     def __init__(self):
@@ -28,11 +30,10 @@ class CmdGUI(QMainWindow):
         # Read Sockets
         self.read_tm_socket_list = yd.read_tm_sockets(self.parsed_out_yml, 0)
         self.tm_timer = QTimer(self)
-        self.tm_timer.timeout.connect(self.read_tm) # implement the read tm
+        self.tm_timer.timeout.connect(self.read_tm) #read_tm = custom method
         self.tm_timer.start(50) # ms   
 
         # TX Sockets
-        ip_setting = 1 # 0 = Local | 1 = Pi
         self.sendpoints = yd.send_ports(self.parsed_out_yml, ip_setting)
         self.interval_list = yd.intervals_read_send(self.parsed_out_yml)
         self.pi1_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -43,6 +44,8 @@ class CmdGUI(QMainWindow):
         layout_nano =   QVBoxLayout()
         layout_elegoo = QVBoxLayout()
         layout_btns =   QVBoxLayout()
+        layout_vid_btns = QVBoxLayout()
+
 
         # Sent status
         self.cmd_sent = QLabel("CMD:  N/A")
@@ -64,7 +67,10 @@ class CmdGUI(QMainWindow):
         self.r_motor_status     = QLabel("MOTOR R:  N/A")
         self.elegoo_id_status   = QLabel("ELEGOO ID:  N/A")
 
-        #layout.addWidget(self.status)
+        # Vid status
+        self.vid_status = QLabel("Video Status:  N/A")
+
+        # Add labels to the GUI; FUTURE = condense this section
         layout_nano.addWidget(self.uss_f_status)
         layout_nano.addWidget(self.uss_r_status)
         layout_nano.addWidget(self.uss_l_status)
@@ -76,6 +82,8 @@ class CmdGUI(QMainWindow):
         layout_elegoo.addWidget(self.l_motor_status)
         layout_elegoo.addWidget(self.r_motor_status)
         layout_elegoo.addWidget(self.elegoo_id_status)
+
+        layout_vid_btns.addWidget(self.vid_status)
 
         central = QWidget()
         central.setLayout(layout)
@@ -101,15 +109,26 @@ class CmdGUI(QMainWindow):
                 btn.clicked.connect(lambda _, s=state: self.send_cmd_pi1(s, self.pwr_input.value()))
             self.buttons[state] = btn
             layout_btns.addWidget(btn)
+
+        self.en_vid_btn = QPushButton("Enable Video")
+        self.dis_vid_btn = QPushButton("Disable Video")
+        self.en_vid_btn.clicked.connect(self.enable_video_button)
+        self.dis_vid_btn.clicked.connect(self.disable_video_button)
+        layout_vid_btns.addWidget(self.en_vid_btn)
+        layout_vid_btns.addWidget(self.dis_vid_btn)
         
         layout.addLayout( layout_btns )
         layout.addLayout( layout_nano )
         layout.addLayout( layout_elegoo )
+        layout.addLayout( layout_vid_btns )
 
         # --- GUI Heartbeat timer --- 
         self.hb_timer = QTimer(self)
         self.hb_timer.timeout.connect(self.send_hb)
         self.hb_timer.start(self.interval_list["mac_pulse_read_interval"])   # In milliseconds; 100 ms = 10 Hz heartbeat
+
+        # -- Video
+        self.start_video()
 
         # --- Timer to read sockets
     def read_tm(self):
@@ -160,6 +179,27 @@ class CmdGUI(QMainWindow):
         }
         data = json.dumps(pkt).encode("utf-8")
         self.pi1_sock.sendto(data, (self.sendpoints["mac_pulse"][0], self.sendpoints["mac_pulse"][1]))
+
+    def start_video(self):
+        # ffplay -fflags nobuffer -flags low_delay -framedrop -vf setpts=0 udp://192.168.1.72:5015
+        video_streaming_link = (f"udp://{vid_ip}:{vid_port}")
+        ffplay_cmd = ["ffplay", 
+                    "-fflags", "nobuffer", 
+                    "-flags", "low_delay",
+                     "-framedrop", 
+                     "-vf", "setpts=0",
+                    video_streaming_link]
+        self.ffplay_start = subprocess.Popen(ffplay_cmd)
+
+    def enable_video_button(self): # Sends JSON mssg to pi to enable video stream
+        print("enable!")
+        self.vid_status.setText("Video Status:  Enabled")
+        #pass
+
+    def disable_video_button(self):  # Sends JSON mssg to pi to disable video stream
+        print("disable!")
+        self.vid_status.setText("Video Status:  Disabled")
+        #pass
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

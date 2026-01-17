@@ -16,6 +16,9 @@ network:
     pi2_pulse:
       port: 5009
 
+    vid_cmd:
+      port: 5016
+
 
   # Sent from pi
     nano_to_mac:

@@ -12,7 +12,3 @@ def pi_video_stream(usb_path: str, ip_out: str, port_out: int):
         f"udp://{ip_out}:{port_out}"
     ])
     return stream_process
-
-
-def video_ingest(ip_in: str, port_in: int):
-    pass
