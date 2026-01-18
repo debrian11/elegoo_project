@@ -152,6 +152,7 @@ def myfunction():
                 elif src == "pi2_pulse":
                     pi2_pulse_mssg_id, pi2_pulse_time_rvd = data_mgr.read_pi2_heartbeat(data_to_json)
             # --- End Read UDP ports --- #
+          
 
             # --- Read Serial Ports --- #
             # Elegoo
@@ -178,7 +179,7 @@ def myfunction():
             new_cmd = drm.cmd_timeout_checker(cmd, last_mac_cmd_time_rcv, current_time, interval_list["mac_cmd_timeout"])
             # --- End Mac laptop and cmd checker --- #
             
-            # --- Perform cmds based on link or cmd timeout --- #
+            # --- Perform motor cmds --- #
             if link_checker is False:
                 mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
                 if serial_port_setting == 1 or serial_port_setting == 3:
@@ -186,7 +187,6 @@ def myfunction():
                 
             elif link_checker is True:
                 if new_cmd is True:
-                    # f_uss_threshold: int, l_uss_threshold: int, r_uss_threshold: int, turning_time_threshold: float):
                     mtr_cmd, last_time_turned, done_turning, turning = drm.motor_cmd(cmd, pwr, turning, done_turning, f_uss, l_uss, r_uss, 
                                                                                     last_time_turned, current_time, mtr_cmd, 
                                                                                     interval_list["f_uss_threshold"], interval_list["l_uss_threshold"], 

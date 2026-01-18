@@ -1,6 +1,8 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304. C0411, E0401
 # Python Script for GUI
 import json
+import os
+import csv
 import socket
 import select
 import sys
@@ -15,7 +17,8 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QLabel,
 
 # csv
 log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
-ip_setting = 1 # 0 = Local | 1 = Pi
+ip_setting = 1          # 0 = Local | 1 = Pi
+csv_logging_enabled = 1 # 0 = disabled | 1 = enabled
 vid_ip = "192.168.1.72"
 vid_port = 5015
 
@@ -46,7 +49,6 @@ class CmdGUI(QMainWindow):
         layout_btns =   QVBoxLayout()
         layout_vid_btns = QVBoxLayout()
 
-
         # Sent status
         self.cmd_sent = QLabel("CMD:  N/A")
         self.pwr_sent = QLabel("PWR:  N/A")
@@ -61,11 +63,22 @@ class CmdGUI(QMainWindow):
         self.l_encd_status  = QLabel("ENCD L:  N/A")
         self.r_encd_status  = QLabel("ENCD R:  N/A")
         self.nano_id_status = QLabel("NANO ID:  N/A")
+        self.f_uss   = None
+        self.r_uss   = None
+        self.l_uss   = None
+        self.head    = None
+        self.l_encd  = None
+        self.r_encd  = None
+        self.nano_id = None
+
 
         # Elegoo TM Data
         self.l_motor_status     = QLabel("MOTOR L:  N/A")
         self.r_motor_status     = QLabel("MOTOR R:  N/A")
         self.elegoo_id_status   = QLabel("ELEGOO ID:  N/A")
+        self.l_motor   = None
+        self.r_motor   = None
+        self.elegoo_id = None
 
         # Vid status
         self.vid_status = QLabel("Video Status:  N/A")
@@ -90,12 +103,21 @@ class CmdGUI(QMainWindow):
         self.setCentralWidget(central)
         self.resize(600, 300)
 
+        if csv_logging_enabled == 1:
+            print("CSV logging enabled")
+            self.csv_log_path = time.strftime("nano_log_%Y%m%d_%H%M%S.csv")
+            self.new_file = not os.path.exists(log_path) or os.path.getsize(log_path) == 0
+            self.csv_log_file = open(self.csv_log_path, "a", newline="")
+            self.csv_writer = csv.writer(self.csv_log_file)
+            if self.csv_log_file:
+                self.csv_writer.writerow(["t", "L_encd", "R_encd, L_motor, R_motor"])
+
         # --- CREATING BUTTON FOR SENDING COMMANDS TO PI1 --- 
         # Setup Power Input
         self.pwr_input = QSpinBox()
-        self.pwr_input.setRange(0, 100)
+        self.pwr_input.setRange(0, 150)
         self.pwr_input.setValue(100)
-        self.pwr_input.setSuffix(" %")
+        self.pwr_input.setSuffix(" PWM")
         layout_btns.addWidget(self.pwr_input)
 
         # Create Buttons for Pi 1
@@ -128,7 +150,7 @@ class CmdGUI(QMainWindow):
         self.hb_timer.start(self.interval_list["mac_pulse_read_interval"])   # In milliseconds; 100 ms = 10 Hz heartbeat
 
         # -- Video
-        self.start_video()
+        #self.start_video()
 
         # --- Timer to read sockets
     def read_tm(self):
@@ -142,22 +164,25 @@ class CmdGUI(QMainWindow):
             src = dmm.json_reader(json_conv_pkt)
             if src == "nano":
                 #print("Nano ", json_conv_pkt)
-                f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id = dmm.nano_parser(json_conv_pkt)
-                self.uss_f_status.setText(f"USS F:  {f_uss}")
-                self.uss_r_status.setText(f"USS R:  {r_uss}")
-                self.uss_l_status.setText(f"USS L:  {l_uss}")
-                self.head_status.setText(f"HEAD:   {head}")
-                self.l_encd_status.setText(f"L_ENCD:  {l_encd}")
-                self.r_encd_status.setText(f"R_ENCD:  {r_encd}")
-                self.nano_id_status.setText(f"NANO ID:  {nano_id}")
+                self.f_uss, self.r_uss, self.l_uss, self.head, self.l_encd, self.r_encd, self.nano_id = dmm.nano_parser(json_conv_pkt)
+                self.uss_f_status.setText(f"USS F:  {self.f_uss}")
+                self.uss_r_status.setText(f"USS R:  {self.r_uss}")
+                self.uss_l_status.setText(f"USS L:  {self.l_uss}")
+                self.head_status.setText(f"HEAD:   {self.head}")
+                self.l_encd_status.setText(f"L_ENCD:  {self.l_encd}")
+                self.r_encd_status.setText(f"R_ENCD:  {self.r_encd}")
+                self.nano_id_status.setText(f"NANO ID:  {self.nano_id}")
 
             elif src == "elegoo":
                 #print("ELEGOO ", json_conv_pkt)
-                r_motor, l_motor, elegoo_id = dmm.elegoo_parser(json_conv_pkt)
-                self.r_motor_status.setText(f"MOTOR L:  {r_motor}")
-                self.l_motor_status.setText(f"MOTOR R:  {l_motor}")
-                self.elegoo_id_status.setText(f"ELEGOO ID:  {elegoo_id}")
+                self.r_motor, self.l_motor, self.elegoo_id = dmm.elegoo_parser(json_conv_pkt)
+                self.r_motor_status.setText(f"MOTOR L:  {self.r_motor}")
+                self.l_motor_status.setText(f"MOTOR R:  {self.l_motor}")
+                self.elegoo_id_status.setText(f"ELEGOO ID:  {self.elegoo_id}")
 
+            if csv_logging_enabled == 1:
+                self.generate_csv(self.csv_writer, self.csv_log_file, self.l_encd, self.r_encd, self.l_motor, self.r_motor)
+        
     def send_cmd_pi1(self, cmd: str, pwr: int):
         pkt = {
             "source": "mac_cmd",
@@ -200,6 +225,18 @@ class CmdGUI(QMainWindow):
         print("disable!")
         self.vid_status.setText("Video Status:  Disabled")
         #pass
+
+    def generate_csv(self, csv_writer: csv.writer, csv_log_file, l_encd: int, r_encd: int, l_motor: int, r_motor: int):
+        csv_writer.writerow([
+            time.monotonic(),
+            l_encd,
+            r_encd,
+            l_motor,
+            r_motor
+        ])
+        csv_log_file.flush()
+        os.fsync(csv_log_file.fileno())
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

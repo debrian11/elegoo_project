@@ -8,8 +8,6 @@
 #   - return the converted dictionary into a JSON dumps
 
 import json
-import time
-import serial
 
 all_states = ["FWD", "LEFT", "RIGHT", "BACK", "STOP"]
 
