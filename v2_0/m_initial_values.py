@@ -1,17 +1,18 @@
 #pylint: disable=C0103,C0114,C0115,C0116,C0301,C0303,C0304,C0411
 # This module stores the initial values for variables to initialize
 def initial_values():
-    f_uss =     None
-    r_uss =     None
-    l_uss =     None
-    head =      0
-    l_encd =    0
-    r_encd =    0
-    r_motor =   0
-    l_motor =   0
-    cmd =       "STOP"
-    pwr =       0
-    return f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr
+    f_uss =         None
+    r_uss =         None
+    l_uss =         None
+    head =          0
+    l_encd =        0
+    r_encd =        0
+    r_motor =       0
+    l_motor =       0
+    cmd =           "STOP"
+    pwr =           0
+    tgt_heading = None
+    return f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr, tgt_heading
 
 def initial_time_values():
     mac_pulse_time_rvd = 0

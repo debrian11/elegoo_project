@@ -1,7 +1,7 @@
-all_states = ["FWD", "LEFT", "RIGHT", "BACK", "STOP"]
-btn_list = []
 
-for i, btn_name in enumerate(all_states):
-    btn_list.append(btn_name)
+import json
 
-print(btn_list)
+stop_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0 }
+a = json.dumps(stop_cmd)
+print(a)
+b = json.loads(a)

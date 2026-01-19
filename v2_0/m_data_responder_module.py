@@ -8,6 +8,7 @@
 #   - return the converted dictionary into a JSON dumps
 
 import json
+import math
 
 all_states = ["FWD", "LEFT", "RIGHT", "BACK", "STOP"]
 
@@ -35,46 +36,38 @@ def the_state_machine(link_state: str, cur_time: float, mac_pulse_time_rvd: floa
 
 # Expected format for Arduino: { "L_DIR":0, "R_DIR":0, "L_PWM":50, "R_PWM":50 }
 def fallback_motor_cmd(cmd: str, pwr: int) -> str:
-    pwr_adjust = 1
-    fwd_cmd =   { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust),        "R_PWM": pwr*(pwr_adjust) }
-    left_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust)*(0.5),  "R_PWM": pwr*(pwr_adjust) }
-    right_cmd = { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust),        "R_PWM": pwr*(pwr_adjust)*(0.5) }
-    back_cmd =  { "L_DIR": 0, "R_DIR": 0, "L_PWM": pwr*(pwr_adjust),         "R_PWM": pwr*(pwr_adjust) }
     stop_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0 }
+    return json.dumps(stop_cmd)        
 
-    if cmd in all_states:
-        if cmd == all_states[0]:    # FWD
-            motor_cmd = json.dumps(fwd_cmd)
-
-        elif cmd == all_states[1]:  # LEFT
-            motor_cmd = json.dumps(left_cmd)
-
-        elif cmd == all_states[2]:  # RIGHT
-            motor_cmd = json.dumps(right_cmd)
-
-        elif cmd == all_states[3]:  # BACK
-            motor_cmd = json.dumps(back_cmd)
-
-        elif cmd == all_states[4]:  # STOP
-            motor_cmd = json.dumps(stop_cmd)
-        
-        return motor_cmd
-        
-
-def heading_keeper(head: float, cur_time: float): 
-    pass
+def heading_keeper(target_heading: int, cur_heading: int): 
+    # NEED TO DETERMINE HOW TO LOCK TARGET HEADING
+    # NEED TO DETERMINE HOW TO BOUND DEGREES WITHIN 360
+    # NEED TO DETERMINE DEAD BAND
+    adjust_value = 1.5
+    delta_angle = target_heading - cur_heading
+    # TBD
+    l_mtr_adjust = math.ceil((1)*(delta_angle)*(adjust_value))
+    r_mtr_adjust = math.ceil((-1)*(delta_angle)*(adjust_value))
+    print("L MTR Adjust = ", l_mtr_adjust, " |  R MTR Adjust = ", r_mtr_adjust)
+    return l_mtr_adjust, r_mtr_adjust
+    
 
     
 # Expected format for Arduino: { "L_DIR":0, "R_DIR":0, "L_PWM":50, "R_PWM":50 }
 def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int, l_uss: int, r_uss: int, 
-              last_time_turned: float, cur_time: float, motor_cmd: str,
+              tgt_heading: int, cur_heading: int, last_time_turned: float, cur_time: float, motor_cmd: str,
               f_uss_threshold: int, l_uss_threshold: int, r_uss_threshold: int, turning_time_threshold: float):
     
-    pwr_adjust = 1
-    fwd_cmd =   { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust),        "R_PWM": pwr*(pwr_adjust) }
-    left_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust)*(0.5),  "R_PWM": pwr*(pwr_adjust) }
-    right_cmd = { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(pwr_adjust),        "R_PWM": pwr*(pwr_adjust)*(0.5) }
-    back_cmd =  { "L_DIR": 0, "R_DIR": 0, "L_PWM": pwr*(pwr_adjust),         "R_PWM": pwr*(pwr_adjust) }
+
+    # Heading Adjuster
+    #l_mtr_adjust, r_mtr_adjust = heading_keeper(tgt_heading, cur_heading)
+    l_mtr_adjust = 0; r_mtr_adjust = 0
+
+
+    fwd_cmd =   { "L_DIR": 1, "R_DIR": 1, "L_PWM": (pwr - l_mtr_adjust), "R_PWM": (pwr-r_mtr_adjust) }
+    left_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(0.5),  "R_PWM": pwr }
+    right_cmd = { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr, "R_PWM": pwr*(0.5) }
+    back_cmd =  { "L_DIR": 0, "R_DIR": 0, "L_PWM": pwr, "R_PWM": pwr }
     stop_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0 }
     
     # comment 1 or 0 to print stuff

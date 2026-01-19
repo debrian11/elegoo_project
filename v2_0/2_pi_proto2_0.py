@@ -27,13 +27,13 @@ import m_video_stream           as vs       # Video stream module
 # [0] = UDP Test Tool   |    [1] = Elegoo HW                  # Set this to enable test Elegoo or HW
 # [0] = Disable Video Stream   |    [1] = Enable Video Stream # Set this to enable video stream at /dev/video0
 
-ip_setting = 1                      # [0] = local IP   |    [1] = Pi IP  
-serial_port_setting = 3             # [0] = none  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano
+ip_setting = 0                      # [0] = local IP   |    [1] = Pi IP  
+serial_port_setting = 0             # [0] = none  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano
 csv_logging = 0                     # [0] = OFF   |    [1] = ON    
 print_stuff = 1; print_wait = 0.1   # [0] = no print   |    [1] = print    
-nano_setting = 1                    # [0] = UDP Test Tool   |    [1] = Nano HW 
-elegoo_setting = 1                  # [0] = UDP Test Tool   |    [1] = Elegoo HW 
-video_setting = 1                   # [0] = Dis Vid Strm   |    [1] = En Vid Strm
+nano_setting = 0                    # [0] = UDP Test Tool   |    [1] = Nano HW 
+elegoo_setting = 0                  # [0] = UDP Test Tool   |    [1] = Elegoo HW 
+video_setting = 0                   # [0] = Dis Vid Strm   |    [1] = En Vid Strm
 # ------ end SETTINGS ---- #
 
 yaml_file_name = 'pi_config.yml'
@@ -47,11 +47,11 @@ def myfunction():
         if print_stuff == 1: print("Starting script"); time.sleep(print_wait); print("Setting initial values"); time.sleep(print_wait)
 
         # Initial Values
-        f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr,  = iv.initial_values()
+        f_uss, r_uss, l_uss, head, l_encd, r_encd, l_motor, r_motor, cmd, pwr, tgt_heading = iv.initial_values()
         mac_pulse_time_rvd, pi2_pulse_time_rvd, mac_cmd_time, last_mac_cmd_time_rcv, last_mac_pulse_time_rcv, last_time_turned = iv.initial_time_values()
         mac_pulse_mssg_id, pi2_pulse_mssg_id, nano_id, elegoo_id, mac_cmd_id = iv.initial_mssg_id_values()
         link_checker, new_cmd, turning, done_turning = iv.intial_boolean_values()
-
+    
         # --- CSV logger --- #
         if csv_logging == 1:
             csv_write = data_mgr.csv_logger(log_path)
@@ -127,13 +127,13 @@ def myfunction():
                 if nano_setting == 0:
                     if src == "nano":
                         f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id = data_mgr.nano_parser(data_to_json)
-                        print("NANO-UDP :", data_to_json)
+                        #print("NANO-UDP :", data_to_json)
                         tx_socket.sendto(last_pkt, (tm_sendpoints["nano_to_mac"][0], tm_sendpoints["nano_to_mac"][1]))
 
                 if elegoo_setting == 0:
                     if src == "elegoo":
                         r_motor, l_motor, elegoo_id = data_mgr.elegoo_parser(data_to_json)
-                        print("ELEGOO RXd", data_to_json)
+                        #print("ELEGOO RXd", data_to_json)
                         tx_socket.sendto(last_pkt, (tm_sendpoints["elegoo_to_mac"][0], tm_sendpoints["elegoo_to_mac"][1]))
 
                 if src == "mac_cmd":
@@ -144,17 +144,18 @@ def myfunction():
                 elif src == "mac_pulse":
                     mac_pulse_time_rvd, mac_pulse_mssg_id = data_mgr.read_mac_heartbeat(data_to_json)
                     last_mac_pulse_time_rcv = time.monotonic()
-                    print("mac_pulse", data_to_json)
+                    #print("mac_pulse", data_to_json)
                 
                 elif src =="vid_cmd":
                     pass
             
                 elif src == "pi2_pulse":
                     pi2_pulse_mssg_id, pi2_pulse_time_rvd = data_mgr.read_pi2_heartbeat(data_to_json)
+
             # --- End Read UDP ports --- #
           
 
-            # --- Read Serial Ports --- #
+            # --- Read Serial Ports then sends it over TM --- #
             # Elegoo
             if serial_port_setting == 1 or serial_port_setting == 3:
                 elegoo_json, elegoo_ser_buffer = sh.read_json(elegoo_port, elegoo_ser_buffer)
@@ -173,31 +174,46 @@ def myfunction():
                         final_nano_json = { "source": "nano", **nano_json}
                         tx_socket.sendto(data_mgr.json_convert(final_nano_json), (tm_sendpoints["nano_to_mac"][0], tm_sendpoints["nano_to_mac"][1]))
 
-
             # --- Mac laptop and cmd checker --- #
             link_checker = drm.mac_hb_checker(last_mac_pulse_time_rcv, current_time, interval_list["mac_hb_timeout"])
             new_cmd = drm.cmd_timeout_checker(cmd, last_mac_cmd_time_rcv, current_time, interval_list["mac_cmd_timeout"])
             # --- End Mac laptop and cmd checker --- #
             
-            # --- Perform motor cmds --- #
+            # --- Motor Commands --- #
             if link_checker is False:
-                mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
+                mtr_cmd = drm.fallback_motor_cmd("STOP", 0) # mtr_cmd is a json str
                 if serial_port_setting == 1 or serial_port_setting == 3:
                     sh.write_json(elegoo_port, mtr_cmd)
+                if ip_setting == 0:
+                    mtr_str_to_json = json.loads(mtr_cmd)
+                    udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
+                    tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
+                    print(udp_mtr_cmd)
                 
             elif link_checker is True:
                 if new_cmd is True:
                     mtr_cmd, last_time_turned, done_turning, turning = drm.motor_cmd(cmd, pwr, turning, done_turning, f_uss, l_uss, r_uss, 
-                                                                                    last_time_turned, current_time, mtr_cmd, 
+                                                                                    tgt_heading, head, last_time_turned, current_time, mtr_cmd, 
                                                                                     interval_list["f_uss_threshold"], interval_list["l_uss_threshold"], 
                                                                                     interval_list["r_uss_threshold"], interval_list["turn_time_threshold"])
                     if serial_port_setting == 1 or serial_port_setting == 3:
                         sh.write_json(elegoo_port, mtr_cmd)
+                    if ip_setting == 0:
+                        mtr_str_to_json = json.loads(mtr_cmd)
+                        udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
+                        tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
+                        print(udp_mtr_cmd)
 
                 elif new_cmd is False:
                     mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
                     if serial_port_setting == 1 or serial_port_setting == 3:
                         sh.write_json(elegoo_port, mtr_cmd)
+                    if ip_setting == 0:
+                        mtr_str_to_json = json.loads(mtr_cmd)
+                        udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
+                        tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
+                        print(udp_mtr_cmd)
+
             # --- End Perform cmds based on link or cmd timeout --- #
 
             time.sleep(0.001)
@@ -205,8 +221,9 @@ def myfunction():
         print("\Shutting Down")
     
     finally:
-        elegoo_port.close()
-        nano_port.close()
+        if serial_port_setting == 3:
+            elegoo_port.close()
+            nano_port.close()
         if video_setting == 1:
             if os.path.exists(camera_path):
                 stream_video.terminate()

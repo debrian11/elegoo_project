@@ -17,8 +17,8 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QLabel,
 
 # csv
 log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
-ip_setting = 1          # 0 = Local | 1 = Pi
-csv_logging_enabled = 1 # 0 = disabled | 1 = enabled
+ip_setting = 0          # 0 = Local | 1 = Pi
+csv_logging_enabled = 0 # 0 = disabled | 1 = enabled
 vid_ip = "192.168.1.72"
 vid_port = 5015
 
@@ -193,6 +193,7 @@ class CmdGUI(QMainWindow):
         }
         data = json.dumps(pkt).encode("utf-8")
         self.pi1_sock.sendto(data, (self.sendpoints["mac_cmd"][0], self.sendpoints["mac_cmd"][1]))
+        print(data)
         self.cmd_sent.setText(f"CMD:  {cmd}")
         self.pwr_sent.setText(f"PWR:  {pwr}")
 

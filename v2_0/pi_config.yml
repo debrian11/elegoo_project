@@ -1,10 +1,10 @@
 network:
   endpoints:
   # Sent to pi
-    nano_to_pi:
+    nano_to_pi: # Test Port only
       port: 5005
 
-    elegoo_to_pi:
+    elegoo_to_pi: # Test Port only
       port: 5006
 
     mac_cmd:
@@ -39,6 +39,15 @@ network:
     pi_to_mac_vid:
       port: 5015
 
+  # Additional sim ports.
+    pi_to_sim_mtr:
+      port: 5017
+
+    sim_mtr_to_pi:
+      port: 5018
+    
+    sim_sensor_to_pi:
+      port: 5019
 
 intervals:
   # 0.1 = 100 ms = 10 Hz

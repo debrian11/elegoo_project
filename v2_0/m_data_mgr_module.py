@@ -45,6 +45,15 @@ def elegoo_parser(json_pkt: dict):
     elegoo_id = json_pkt.get("mssg_id", 0)
     return r_motor, l_motor, elegoo_id
 
+# Incoming Motor TM
+def sim_mtr_cmd_parser(json_pkt: dict):
+    l_dir = json_pkt.get("L_DIR", 0)
+    r_dir = json_pkt.get("R_DIR", 0)
+    l_pwm = json_pkt.get("L_PWM", 0)
+    r_pwm = json_pkt.get("R_PWM", 0)
+    return l_dir, r_dir, l_pwm, r_pwm
+
+
 # Parse out the two values, CMD & PWR, from Mac into useful varaibles (int)
 def mac_parser(json_pkt: dict):
     cmd = json_pkt.get("cmd", "N/A")
