@@ -49,6 +49,10 @@ network:
     sim_sensor_to_pi:
       port: 5019
 
+  # Shutdown port
+    shutdown_port:
+      port: 5020
+
 intervals:
   # 0.1 = 100 ms = 10 Hz
   # 0.01 = 10 ms = 100 Hz
@@ -58,8 +62,8 @@ intervals:
   mac_pulse_read: 1000 # ms
   pi2_pulse_read: 1
 
-  nano_send: 1
-  elegoo_send: 2
+  nano_send: 0.05
+  elegoo_send: 0.051
   pi_position: 3
   motor_cmd: 4
   pi2_cmd: 5

@@ -1,4 +1,6 @@
 arduino/libraries
 .DS_Store
 csv/
+pi_csv/
+mac_csv/
 __pycache__

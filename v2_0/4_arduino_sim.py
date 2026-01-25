@@ -25,14 +25,15 @@ def l_encd_math(pwm, encd):
         encd = encd + 1.35
         return math.ceil(encd)
     else:
-        return 0
+        return encd
 
 def r_encd_math(pwm, encd):
     if pwm > 0:
         encd = encd + 1.35
         return math.ceil(encd)
     else:
-        return 0
+        return encd
+    
 
 def main_function():
     # --- Initial values
@@ -44,11 +45,15 @@ def main_function():
     f_uss = 10
     r_uss = 10
     l_uss = 10
+    last_time_nano_send = 0
+    last_time_elegoo_send = 0
 
     # --- Parse out yaml and set up RX and TX Sockets
     print("Set up ports")
     parsed_out_yml   = dmm.parse_yaml(yaml_file_name)
     interval_list    = yd.intervals_read_send(parsed_out_yml)
+    nano_interval_send = interval_list["nano_send_interval"]
+    elegoo_interval_send = interval_list["elegoo_send_interval"]
     read_sock_list   = yd.sim_read(parsed_out_yml, ip_setting)
     tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     tx_sendpoints = yd.send_ports(parsed_out_yml, ip_setting)
@@ -57,6 +62,8 @@ def main_function():
     print("Begin Loop")
     time.sleep(0.3)
     while True:
+        now = time.monotonic()
+        #print(now, last_time_elegoo_send, last_time_nano_send)
         # --- Read Socket for Elegoo CMD
         read_port, _, _ = select.select(read_sock_list, [], [], 0.02) # 20 ms timeout
         for s in read_port:
@@ -83,21 +90,23 @@ def main_function():
 
         #  --- TX Data
         # Elegoo Motor Output
-        elegoo_json = { "source": "elegoo", "R_motor": r_pwm, "L_motor": l_pwm}
-        tx_elegoo_json = dmm.json_convert(elegoo_json)
-        tx_socket.sendto(tx_elegoo_json, (tx_sendpoints["elegoo"][0], tx_sendpoints["elegoo"][1]))
-        print(tx_elegoo_json)
+        if now - last_time_elegoo_send > elegoo_interval_send:
+            elegoo_json = { "source": "elegoo", "R_motor": r_pwm, "L_motor": l_pwm}
+            tx_elegoo_json = dmm.json_convert(elegoo_json)
+            tx_socket.sendto(tx_elegoo_json, (tx_sendpoints["elegoo"][0], tx_sendpoints["elegoo"][1]))
+            last_time_elegoo_send = now
+            print(tx_elegoo_json)
 
         # Nano = USS | Magnemeter | Encoder
-        
-
-        nano_json = { "source": "nano", 
-                        "F_USS": f_uss, "R_USS": r_uss, "L_USS": l_uss,
-                        "HEAD": head,
-                        "L_ENCD": l_encd, "R_ENCD": r_encd}
-        tx_nano_json = dmm.json_convert(nano_json)
-        tx_socket.sendto(tx_nano_json, (tx_sendpoints["nano"][0], tx_sendpoints["nano"][1]))
-        print(tx_nano_json)
+        if now - last_time_nano_send > nano_interval_send:
+            nano_json = { "source": "nano", 
+                            "F_USS": f_uss, "R_USS": r_uss, "L_USS": l_uss,
+                            "HEAD": head,
+                            "L_ENCD": l_encd, "R_ENCD": r_encd}
+            tx_nano_json = dmm.json_convert(nano_json)
+            tx_socket.sendto(tx_nano_json, (tx_sendpoints["nano"][0], tx_sendpoints["nano"][1]))
+            last_time_nano_send = now
+            print(tx_nano_json)
         time.sleep(0.001)
 
 if __name__ == "__main__":

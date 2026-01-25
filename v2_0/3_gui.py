@@ -17,8 +17,8 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QLabel,
 
 # csv
 log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
-ip_setting = 0          # 0 = Local | 1 = Pi
-csv_logging_enabled = 0 # 0 = disabled | 1 = enabled
+ip_setting = 1          # 0 = Local | 1 = Pi
+csv_logging_enabled = 1 # 0 = disabled | 1 = enabled
 vid_ip = "192.168.1.72"
 vid_port = 5015
 
@@ -132,6 +132,10 @@ class CmdGUI(QMainWindow):
             self.buttons[state] = btn
             layout_btns.addWidget(btn)
 
+        self.exit_btn = QPushButton("Exit")
+        self.exit_btn.clicked.connect(self.exit_gui)
+        layout_btns.addWidget(self.exit_btn)
+
         self.en_vid_btn = QPushButton("Enable Video")
         self.dis_vid_btn = QPushButton("Disable Video")
         self.en_vid_btn.clicked.connect(self.enable_video_button)
@@ -149,8 +153,12 @@ class CmdGUI(QMainWindow):
         self.hb_timer.timeout.connect(self.send_hb)
         self.hb_timer.start(self.interval_list["mac_pulse_read_interval"])   # In milliseconds; 100 ms = 10 Hz heartbeat
 
-        # -- Video
-        #self.start_video()
+    # --- Exit button
+    def exit_gui(self):
+        self.send_cmd_pi1("STOP", 0)
+        self.cmd_sent.setText("CMD:  EXIT")
+        self.ffplay_start.terminate()
+        QTimer.singleShot(500, self.shutdown_cmd)
 
         # --- Timer to read sockets
     def read_tm(self):
@@ -165,9 +173,9 @@ class CmdGUI(QMainWindow):
             if src == "nano":
                 #print("Nano ", json_conv_pkt)
                 self.f_uss, self.r_uss, self.l_uss, self.head, self.l_encd, self.r_encd, self.nano_id = dmm.nano_parser(json_conv_pkt)
-                self.uss_f_status.setText(f"USS F:  {self.f_uss}")
-                self.uss_r_status.setText(f"USS R:  {self.r_uss}")
-                self.uss_l_status.setText(f"USS L:  {self.l_uss}")
+                self.uss_f_status.setText(f"F_USS:  {self.f_uss}")
+                self.uss_r_status.setText(f"R_USS:  {self.r_uss}")
+                self.uss_l_status.setText(f"L_USS:  {self.l_uss}")
                 self.head_status.setText(f"HEAD:   {self.head}")
                 self.l_encd_status.setText(f"L_ENCD:  {self.l_encd}")
                 self.r_encd_status.setText(f"R_ENCD:  {self.r_encd}")
@@ -176,8 +184,8 @@ class CmdGUI(QMainWindow):
             elif src == "elegoo":
                 #print("ELEGOO ", json_conv_pkt)
                 self.r_motor, self.l_motor, self.elegoo_id = dmm.elegoo_parser(json_conv_pkt)
-                self.r_motor_status.setText(f"MOTOR L:  {self.r_motor}")
-                self.l_motor_status.setText(f"MOTOR R:  {self.l_motor}")
+                self.r_motor_status.setText(f"R_MOTOR:  {self.r_motor}")
+                self.l_motor_status.setText(f"L_MOTOR:  {self.l_motor}")
                 self.elegoo_id_status.setText(f"ELEGOO ID:  {self.elegoo_id}")
 
             if csv_logging_enabled == 1:
@@ -193,9 +201,18 @@ class CmdGUI(QMainWindow):
         }
         data = json.dumps(pkt).encode("utf-8")
         self.pi1_sock.sendto(data, (self.sendpoints["mac_cmd"][0], self.sendpoints["mac_cmd"][1]))
-        print(data)
         self.cmd_sent.setText(f"CMD:  {cmd}")
         self.pwr_sent.setText(f"PWR:  {pwr}")
+
+    def shutdown_cmd(self):
+        pkt = {
+            "source": "shutdown_cmd",
+            "time": time.monotonic(),
+        }
+        data = json.dumps(pkt).encode("utf-8")
+        self.pi1_sock.sendto(data, (self.sendpoints["shutdown_port"][0], self.sendpoints["shutdown_port"][1]))
+        self.cmd_sent.setText("CMD:  SHUTDOWNNNNNNNNNN")
+        QTimer.singleShot(200, self.close)
 
     def send_hb(self):
         pkt = {
@@ -220,11 +237,13 @@ class CmdGUI(QMainWindow):
     def enable_video_button(self): # Sends JSON mssg to pi to enable video stream
         print("enable!")
         self.vid_status.setText("Video Status:  Enabled")
+        self.start_video()
         #pass
 
     def disable_video_button(self):  # Sends JSON mssg to pi to disable video stream
         print("disable!")
         self.vid_status.setText("Video Status:  Disabled")
+        self.ffplay_start.terminate()
         #pass
 
     def generate_csv(self, csv_writer: csv.writer, csv_log_file, l_encd: int, r_encd: int, l_motor: int, r_motor: int):

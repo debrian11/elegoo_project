@@ -10,6 +10,7 @@ import os
 import select
 import json
 import time
+import sys
 import m_serial_handler         as sh       # Configures serial ports
 import m_data_mgr_module        as data_mgr # Manages parsers of received JSON packets depending on source
 import m_data_responder_module  as drm      # Manages responses to send
@@ -28,7 +29,7 @@ import m_video_stream           as vs       # Video stream module
 # [0] = Disable Video Stream   |    [1] = Enable Video Stream # Set this to enable video stream at /dev/video0
 
 ip_setting = 0                      # [0] = local IP   |    [1] = Pi IP  
-serial_port_setting = 0             # [0] = none  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano
+serial_port_setting = 0             # [0] = none(UDP)  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano
 csv_logging = 0                     # [0] = OFF   |    [1] = ON    
 print_stuff = 1; print_wait = 0.1   # [0] = no print   |    [1] = print    
 nano_setting = 0                    # [0] = UDP Test Tool   |    [1] = Nano HW 
@@ -127,19 +128,19 @@ def myfunction():
                 if nano_setting == 0:
                     if src == "nano":
                         f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id = data_mgr.nano_parser(data_to_json)
-                        #print("NANO-UDP :", data_to_json)
+                        print("NANO-UDP :", data_to_json)
                         tx_socket.sendto(last_pkt, (tm_sendpoints["nano_to_mac"][0], tm_sendpoints["nano_to_mac"][1]))
 
                 if elegoo_setting == 0:
                     if src == "elegoo":
                         r_motor, l_motor, elegoo_id = data_mgr.elegoo_parser(data_to_json)
-                        #print("ELEGOO RXd", data_to_json)
+                        print("ELEGOO RXd", data_to_json)
                         tx_socket.sendto(last_pkt, (tm_sendpoints["elegoo_to_mac"][0], tm_sendpoints["elegoo_to_mac"][1]))
 
                 if src == "mac_cmd":
                     cmd, pwr, mac_cmd_time, mac_cmd_id = data_mgr.mac_parser(data_to_json)
                     last_mac_cmd_time_rcv = time.monotonic()
-                    print("mac_cmd", data_to_json)
+                    #print("mac_cmd", data_to_json)
 
                 elif src == "mac_pulse":
                     mac_pulse_time_rvd, mac_pulse_mssg_id = data_mgr.read_mac_heartbeat(data_to_json)
@@ -148,10 +149,21 @@ def myfunction():
                 
                 elif src =="vid_cmd":
                     pass
-            
+
+                elif src == "shutdown_cmd":
+                    mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
+                    if serial_port_setting == 0:
+                        mtr_str_to_json = json.loads(mtr_cmd)
+                        udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
+                        tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
+                        time.sleep(0.1)
+                        sys.exit()
+
+                    if serial_port_setting == 1 or serial_port_setting == 3:
+                        sh.write_json(elegoo_port, mtr_cmd)
+
                 elif src == "pi2_pulse":
                     pi2_pulse_mssg_id, pi2_pulse_time_rvd = data_mgr.read_pi2_heartbeat(data_to_json)
-
             # --- End Read UDP ports --- #
           
 
@@ -163,7 +175,6 @@ def myfunction():
                     r_motor, l_motor, elegoo_id = data_mgr.elegoo_parser(elegoo_json)
                     final_elegoo_json = { "source": "elegoo", **elegoo_json}
                     tx_socket.sendto(data_mgr.json_convert(final_elegoo_json), (tm_sendpoints["elegoo_to_mac"][0], tm_sendpoints["elegoo_to_mac"][1]))
-
 
             # Nano
             if serial_port_setting == 2 or serial_port_setting == 3:
@@ -188,7 +199,7 @@ def myfunction():
                     mtr_str_to_json = json.loads(mtr_cmd)
                     udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
                     tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
-                    print(udp_mtr_cmd)
+                    #print(udp_mtr_cmd)
                 
             elif link_checker is True:
                 if new_cmd is True:
@@ -202,7 +213,7 @@ def myfunction():
                         mtr_str_to_json = json.loads(mtr_cmd)
                         udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
                         tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
-                        print(udp_mtr_cmd)
+                        #print(udp_mtr_cmd)
 
                 elif new_cmd is False:
                     mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
@@ -212,7 +223,7 @@ def myfunction():
                         mtr_str_to_json = json.loads(mtr_cmd)
                         udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
                         tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
-                        print(udp_mtr_cmd)
+                        #print(udp_mtr_cmd)
 
             # --- End Perform cmds based on link or cmd timeout --- #
 

@@ -21,7 +21,8 @@ def assign_read_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
         "mac_pulse"       : (rx_ip, parsed_out_yaml["network"]["endpoints"]["mac_pulse"]["port"]),
         "pi2_pulse"       : (rx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"]),
         "vid_cmd"         : (rx_ip, parsed_out_yaml["network"]["endpoints"]["vid_cmd"]["port"]),
-        "sim_mtr_to_pi"   : (rx_ip, parsed_out_yaml["network"]["endpoints"]["sim_mtr_to_pi"]["port"])
+        "sim_mtr_to_pi"   : (rx_ip, parsed_out_yaml["network"]["endpoints"]["sim_mtr_to_pi"]["port"]),
+        "shutdown_port"   : (rx_ip, parsed_out_yaml["network"]["endpoints"]["shutdown_port"]["port"])
     } 
 
     # Create read sockets for each port
@@ -48,7 +49,8 @@ def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
         "pi2_pulse"             : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi2_pulse"]["port"]),
         "vid_cmd"               : (tx_ip, parsed_out_yaml["network"]["endpoints"]["vid_cmd"]["port"]),
         "sim_mtr_to_pi"         : (tx_ip, parsed_out_yaml["network"]["endpoints"]["sim_mtr_to_pi"]["port"]),
-        "sim_sensor_to_pi"      : (tx_ip, parsed_out_yaml["network"]["endpoints"]["sim_sensor_to_pi"]["port"])
+        "sim_sensor_to_pi"      : (tx_ip, parsed_out_yaml["network"]["endpoints"]["sim_sensor_to_pi"]["port"]),
+        "shutdown_port"         : (tx_ip, parsed_out_yaml["network"]["endpoints"]["shutdown_port"]["port"])
     } 
     return sendpoints
 # --- Read data coming into Pi. --- 
