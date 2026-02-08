@@ -11,12 +11,40 @@ import select
 import json
 import time
 import sys
+import argparse
 import m_serial_handler         as sh       # Configures serial ports
 import m_data_mgr_module        as data_mgr # Manages parsers of received JSON packets depending on source
 import m_data_responder_module  as drm      # Manages responses to send
 import m_yaml_data              as yd       # Parses out yaml configuration file
 import m_initial_values         as iv       # Manages initial values
 import m_video_stream           as vs       # Video stream module
+
+
+
+# ----- Arguement Parser ------- #
+the_parser = argparse.ArgumentParser(
+    description="Sets IP and Port settings"
+)
+the_parser.add_argument('-i', '--ip',          type=int, default=0)  # [0] = local IP   |    [1] = Pi IP  
+the_parser.add_argument('-s', '--serialport',  type=int, default=0) # [0] = none(UDP)  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano
+the_parser.add_argument('-c', '--csv',         type=int, default=0) # [0] = OFF   |    [1] = ON    
+the_parser.add_argument('-p', '--printstuff',  type=int, default=0) # [0] = no print   |    [1] = print    
+the_parser.add_argument('-v', '--vid',         type=int, default=0) # [0] = Dis Vid Strm   |    [1] = En Vid Strm
+
+# Parse the args
+args = the_parser.parse_args()
+
+ip_setting = args.ip
+serial_port_setting = args.serialport
+csv_logging = args.csv
+print_stuff = args.printstuff
+video_setting = args.vid
+print("Initial Settings:")
+print("ip_setting = ", ip_setting)
+print("serial_port_setting = ", serial_port_setting)
+print("csv_logging = ", csv_logging)
+print("print_stuff = ", print_stuff)
+print("video_setting = ", video_setting)
 
 # ------ SETTINGS ------- #
 # [0] = local IP   |    [1] = Pi IP                           # Set if testing locally or on hardware. This sets the IP for the socket
@@ -27,14 +55,8 @@ import m_video_stream           as vs       # Video stream module
 #                                                               Sensor data from UDP Test Tool or Nano HW
 # [0] = UDP Test Tool   |    [1] = Elegoo HW                  # Set this to enable test Elegoo or HW
 # [0] = Disable Video Stream   |    [1] = Enable Video Stream # Set this to enable video stream at /dev/video0
+print_wait = 0.1  
 
-ip_setting = 0                      # [0] = local IP   |    [1] = Pi IP  
-serial_port_setting = 0             # [0] = none(UDP)  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano
-csv_logging = 0                     # [0] = OFF   |    [1] = ON    
-print_stuff = 1; print_wait = 0.1   # [0] = no print   |    [1] = print    
-nano_setting = 0                    # [0] = UDP Test Tool   |    [1] = Nano HW 
-elegoo_setting = 0                  # [0] = UDP Test Tool   |    [1] = Elegoo HW 
-video_setting = 0                   # [0] = Dis Vid Strm   |    [1] = En Vid Strm
 # ------ end SETTINGS ---- #
 
 yaml_file_name = 'pi_config.yml'
@@ -84,19 +106,27 @@ def myfunction():
         elegoo_ser_buffer = ""
         nano_ser_buffer = ""
         if serial_port_setting == 0:
+            nano_setting = 0                    # [0] = UDP Test Tool   |    [1] = Nano HW 
+            elegoo_setting = 0                  # [0] = UDP Test Tool   |    [1] = Elegoo HW 
             print("Skipping serial setup")
 
         elif serial_port_setting == 1:
             elegoo_port = sh.serial_port_setup(port_name=ELEGOO_PORT, baud_rate=115200)
+            nano_setting = 1
+            elegoo_setting = 1
             print("Connecting to both Nano Port"); print(elegoo_port)
 
         elif serial_port_setting == 2:
             nano_port = sh.serial_port_setup(port_name=NANO_PORT, baud_rate=115200)
+            nano_setting = 1
+            elegoo_setting = 1
             print("Connecting to both Nano Port"); print(nano_port)
 
         elif serial_port_setting == 3:
             elegoo_port = sh.serial_port_setup(port_name=ELEGOO_PORT, baud_rate=115200)
             nano_port = sh.serial_port_setup(port_name=NANO_PORT, baud_rate=115200)
+            nano_setting = 1
+            elegoo_setting = 1
             print("Connecting to both Serial Ports")
             print(nano_port); print(elegoo_port)
             time.sleep(0.5)

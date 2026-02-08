@@ -8,6 +8,7 @@ import select
 import sys
 import time
 import subprocess
+import argparse
 import m_data_mgr_module as dmm
 import m_yaml_data as yd
 
@@ -15,12 +16,15 @@ from PyQt5.QtCore import QTimer, QProcess
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QLabel, 
                              QPushButton, QSpinBox, QWidget, QMainWindow)
 
-# csv
-log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
-ip_setting = 1          # 0 = Local | 1 = Pi
-csv_logging_enabled = 1 # 0 = disabled | 1 = enabled
-vid_ip = "192.168.1.72"
-vid_port = 5015
+# Arge parser
+the_parser = argparse.ArgumentParser(
+    description='Sets IP setting to either local or to pi'
+)
+the_parser.add_argument('-i', '--ip', type=int, default=0)  # 0 = Local | 1 = Pi
+the_parser.add_argument('-c', '--csv', type=int, default=0) # 0 = disabled | 1 = enabled
+args = the_parser.parse_args()
+ip_setting = args.ip
+csv_logging_enabled = args.csv
 
 class CmdGUI(QMainWindow):
     def __init__(self):
@@ -38,6 +42,8 @@ class CmdGUI(QMainWindow):
 
         # TX Sockets
         self.sendpoints = yd.send_ports(self.parsed_out_yml, ip_setting)
+        self.vid_ip = self.sendpoints["vid_cmd"][0]
+        self.vid_port = self.sendpoints["vid_cmd"][1]
         self.interval_list = yd.intervals_read_send(self.parsed_out_yml)
         self.pi1_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -106,7 +112,8 @@ class CmdGUI(QMainWindow):
         if csv_logging_enabled == 1:
             print("CSV logging enabled")
             self.csv_log_path = time.strftime("nano_log_%Y%m%d_%H%M%S.csv")
-            self.new_file = not os.path.exists(log_path) or os.path.getsize(log_path) == 0
+            self.log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
+            self.new_file = not os.path.exists(self.log_path) or os.path.getsize(self.log_path) == 0
             self.csv_log_file = open(self.csv_log_path, "a", newline="")
             self.csv_writer = csv.writer(self.csv_log_file)
             if self.csv_log_file:
@@ -225,7 +232,7 @@ class CmdGUI(QMainWindow):
 
     def start_video(self):
         # ffplay -fflags nobuffer -flags low_delay -framedrop -vf setpts=0 udp://192.168.1.72:5015
-        video_streaming_link = (f"udp://{vid_ip}:{vid_port}")
+        video_streaming_link = (f"udp://{self.vid_ip}:{self.vid_port}")
         ffplay_cmd = ["ffplay", 
                     "-fflags", "nobuffer", 
                     "-flags", "low_delay",
