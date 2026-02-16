@@ -22,6 +22,7 @@ the_arg_parser = argparse.ArgumentParser(
     description="Sets the IP of data sent to either local or Pi"
 )
 the_arg_parser.add_argument('-i', "--ipsetting",  type=int, default=0)
+# currently ipsetting not even used for anything
 parsed_args = the_arg_parser.parse_args()
 ip_setting = parsed_args.ipsetting
 print("ip_setting = ", ip_setting)
@@ -62,7 +63,7 @@ def main_function():
     interval_list    = yd.intervals_read_send(parsed_out_yml)
     nano_interval_send = interval_list["nano_send_interval"]
     elegoo_interval_send = interval_list["elegoo_send_interval"]
-    read_sock_list   = yd.sim_read(parsed_out_yml, ip_setting)
+    read_sock_list   = yd.sim_read(parsed_out_yml)
     tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     tx_sendpoints = yd.send_ports(parsed_out_yml, ip_setting)
     time.sleep(0.3)

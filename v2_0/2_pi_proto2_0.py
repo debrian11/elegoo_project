@@ -19,8 +19,6 @@ import m_yaml_data              as yd       # Parses out yaml configuration file
 import m_initial_values         as iv       # Manages initial values
 import m_video_stream           as vs       # Video stream module
 
-
-
 # ----- Arguement Parser ------- #
 the_parser = argparse.ArgumentParser(
     description="Sets IP and Port settings"
@@ -34,11 +32,11 @@ the_parser.add_argument('-v', '--vid',         type=int, default=0) # [0] = Dis 
 # Parse the args
 args = the_parser.parse_args()
 
-ip_setting = args.ip
+ip_setting =          args.ip
 serial_port_setting = args.serialport
-csv_logging = args.csv
-print_stuff = args.printstuff
-video_setting = args.vid
+csv_logging =         args.csv
+print_stuff =         args.printstuff
+video_setting =       args.vid
 print("Initial Settings:")
 print("ip_setting = ", ip_setting)
 print("serial_port_setting = ", serial_port_setting)
@@ -67,6 +65,7 @@ camera_path = '/dev/video0'
 
 def myfunction():
     try:
+        # =========== Start Setup =============== #
         if print_stuff == 1: print("Starting script"); time.sleep(print_wait); print("Setting initial values"); time.sleep(print_wait)
 
         # Initial Values
@@ -87,14 +86,14 @@ def myfunction():
 
         # --- Intialize RX and TX sockets --- #
         if print_stuff == 1: print("Setting Read sockets"); time.sleep(print_wait)
-        sock_list = yd.assign_read_sockets(parsed_out_yaml, ip_setting)
+        sock_list = yd.assign_read_sockets(parsed_out_yaml)
         time.sleep(0.5)
         if print_stuff == 1: print("Setting TX sockets"); time.sleep(print_wait)
         tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        tm_sendpoints = yd.send_tm_ports(parsed_out_yaml, ip_setting)
+        tm_sendpoints = yd.send_tm_ports(parsed_out_yaml)
         time.sleep(0.5)
 
-        mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
+        mtr_cmd = drm.fallback_motor_cmd()
         # --- End Intialize RX and TX sockets --- #
 
         # --- Video Stream Settings --- #
@@ -131,6 +130,7 @@ def myfunction():
             print(nano_port); print(elegoo_port)
             time.sleep(0.5)
         # --- End Initialize Serial Ports --- #
+        # =========== End Setup =============== # 
 
         # --- ** Main Loop ** --- #
         if print_stuff == 1: print("Begin the loop"); time.sleep(print_wait)
@@ -181,7 +181,7 @@ def myfunction():
                     pass
 
                 elif src == "shutdown_cmd":
-                    mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
+                    mtr_cmd = drm.fallback_motor_cmd()
                     if serial_port_setting == 0:
                         mtr_str_to_json = json.loads(mtr_cmd)
                         udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
@@ -196,7 +196,6 @@ def myfunction():
                     pi2_pulse_mssg_id, pi2_pulse_time_rvd = data_mgr.read_pi2_heartbeat(data_to_json)
             # --- End Read UDP ports --- #
           
-
             # --- Read Serial Ports then sends it over TM --- #
             # Elegoo
             if serial_port_setting == 1 or serial_port_setting == 3:
@@ -222,14 +221,13 @@ def myfunction():
             
             # --- Motor Commands --- #
             if link_checker is False:
-                mtr_cmd = drm.fallback_motor_cmd("STOP", 0) # mtr_cmd is a json str
+                mtr_cmd = drm.fallback_motor_cmd() # mtr_cmd is a json str
                 if serial_port_setting == 1 or serial_port_setting == 3:
                     sh.write_json(elegoo_port, mtr_cmd)
                 if ip_setting == 0:
                     mtr_str_to_json = json.loads(mtr_cmd)
                     udp_mtr_cmd = { "source" : "mtr_cmd", **mtr_str_to_json}
                     tx_socket.sendto(data_mgr.json_convert(udp_mtr_cmd), (tm_sendpoints["pi_to_sim_mtr"][0], tm_sendpoints["pi_to_sim_mtr"][1]))
-                    #print(udp_mtr_cmd)
                 
             elif link_checker is True:
                 if new_cmd is True:
@@ -246,7 +244,7 @@ def myfunction():
                         #print(udp_mtr_cmd)
 
                 elif new_cmd is False:
-                    mtr_cmd = drm.fallback_motor_cmd("STOP", 0)
+                    mtr_cmd = drm.fallback_motor_cmd()
                     if serial_port_setting == 1 or serial_port_setting == 3:
                         sh.write_json(elegoo_port, mtr_cmd)
                     if ip_setting == 0:

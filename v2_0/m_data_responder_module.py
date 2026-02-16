@@ -30,12 +30,9 @@ def cmd_timeout_checker(cmd: str, mac_cmd_time: float, current_time: float, cmd_
             return False
         else:
             return True
-    
-def the_state_machine(link_state: str, cur_time: float, mac_pulse_time_rvd: float, mac_pulse_mssg_id: int):
-    pass
 
 # Expected format for Arduino: { "L_DIR":0, "R_DIR":0, "L_PWM":50, "R_PWM":50 }
-def fallback_motor_cmd(cmd: str, pwr: int) -> str:
+def fallback_motor_cmd() -> str:
     stop_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": 0, "R_PWM": 0 }
     return json.dumps(stop_cmd)        
 
@@ -57,12 +54,9 @@ def heading_keeper(target_heading: int, cur_heading: int):
 def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int, l_uss: int, r_uss: int, 
               tgt_heading: int, cur_heading: int, last_time_turned: float, cur_time: float, motor_cmd: str,
               f_uss_threshold: int, l_uss_threshold: int, r_uss_threshold: int, turning_time_threshold: float):
-    
-
     # Heading Adjuster
     #l_mtr_adjust, r_mtr_adjust = heading_keeper(tgt_heading, cur_heading)
     l_mtr_adjust = 0; r_mtr_adjust = 0
-
 
     fwd_cmd =   { "L_DIR": 1, "R_DIR": 1, "L_PWM": (pwr - l_mtr_adjust), "R_PWM": (pwr-r_mtr_adjust) }
     left_cmd =  { "L_DIR": 1, "R_DIR": 1, "L_PWM": pwr*(0.5),  "R_PWM": pwr }

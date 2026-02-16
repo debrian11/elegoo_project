@@ -6,14 +6,9 @@ mac_ip = "192.168.1.72"
 
 # --- Read data coming into Pi. --- 
 # #Used by Pi itself
-def assign_read_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
+def assign_read_sockets(parsed_out_yaml: dict) -> list:
     all_sockets = {}
-    if test_setting == 1:
-        rx_ip = "0.0.0.0" # pi ip
-        #rx_ip = pi_ip
-    else:
-        rx_ip = "0.0.0.0" # laptop ip
-        #rx_ip = mac_ip
+    rx_ip = "0.0.0.0"
     endpoints = {
         "nano"            : (rx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_pi"]["port"]),
         "elegoo"          : (rx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_pi"]["port"]),
@@ -59,10 +54,8 @@ def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
 def read_tm_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
     all_sockets = {}
     if test_setting == 1:
-        #tx_ip = "0.0.0.0" # pi ip
         tx_ip = pi_ip
     else:
-        #tx_ip = "0.0.0.0" # laptop ip
         tx_ip = mac_ip
     endpoints = {
         "nano_to_mac"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_mac"]["port"]),
@@ -70,7 +63,6 @@ def read_tm_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
         "pi_to_mac_positions"    : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_mac_position"]["port"]),
         "pi_to_motor"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_motor"]["port"]),
         "pi_to_pi2"              : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_pi2"]["port"]),
-        #"vid_cmd"                : (tx_ip, parsed_out_yaml["network"]["endpoints"]["vid_cmd"]["port"])
     } 
 
     # Create read sockets for each port
@@ -83,11 +75,8 @@ def read_tm_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
     return sock_list
 
 # Send TM data from Pi
-def send_tm_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
-    if test_setting == 1:
-        tx_ip = "192.168.1.72" # laptop ip
-    else:
-        tx_ip = "192.168.1.72" # laptop ip
+def send_tm_ports(parsed_out_yaml: dict) -> dict:
+    tx_ip = mac_ip
 
     sendpoints = {
         "nano_to_mac"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_mac"]["port"]),
@@ -99,9 +88,6 @@ def send_tm_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
         "pi_to_sim_mtr"          : (tx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_sim_mtr"]["port"])
     } 
     return sendpoints
-
-# --- Used to send data out of Pi --- # --- Used to send data out of Pi --- 
-
 
 def intervals_read_send(parsed_out_yaml: dict) -> dict:
     interval_list = {
@@ -136,17 +122,11 @@ def send_json(send_socket: socket, cur_time: float, last_time: float, timing_int
         #print(who_sent, json_msg)
     return last_time, counter
 
-
 # --- Sim ports between Pi and Arduino sim --- 
 # Pi to Arduino
-def sim_read(parsed_out_yaml: dict, test_setting: int) -> list:
+def sim_read(parsed_out_yaml: dict) -> list:
     all_sockets = {}
-    if test_setting == 1:
-        rx_ip = "0.0.0.0" # pi ip
-        #rx_ip = pi_ip
-    else:
-        rx_ip = "0.0.0.0" # laptop ip
-        #rx_ip = mac_ip
+    rx_ip = "0.0.0.0"
     endpoints = {
         "pi_to_sim_mtr"      : (rx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_sim_mtr"]["port"]),
     } 

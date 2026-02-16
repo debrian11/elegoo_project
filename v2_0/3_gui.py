@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QLabel,
 the_parser = argparse.ArgumentParser(
     description='Sets IP setting to either local or to pi'
 )
+
 the_parser.add_argument('-i', '--ip', type=int, default=0)  # 0 = Local | 1 = Pi
 the_parser.add_argument('-c', '--csv', type=int, default=0) # 0 = disabled | 1 = enabled
 args = the_parser.parse_args()
