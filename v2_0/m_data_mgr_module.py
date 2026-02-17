@@ -80,12 +80,29 @@ def motor_cmder(motor_cmd: dict):
     encoded_packet = output.encode("utf-8")
     return encoded_packet
 
-def csv_logger(log_path: str):
-    os.makedirs("csv_files", exist_ok=True)
+def csv_logger_pi():
+    csv_dir = "pi_csv_files"
+    os.makedirs(f"{csv_dir}", exist_ok=True)
+    log_path = time.strftime(f"{csv_dir}/pi_log_%Y%m%d_%H%M%S.csv")
     new_file = not os.path.exists(log_path) or os.path.getsize(log_path) == 0
     csv_log_file = open(log_path, "a", newline="") #"a" = append
     csv_writer = csv.writer(csv_log_file) # Create writer object tied to that file
     if new_file:
-        csv_writer.writerow(["timestamp","F_USS","L_USS","R_USS","L_ENCD","R_ENCD","L_ENCD_COV","R_ENCD_COV","HEAD"])
-    return csv_writer
+        csv_writer.writerow(["timestamp","F_USS","L_USS","R_USS","L_ENCD","R_ENCD","HEAD", "L_MTR", "R_MTR"])
+    return csv_writer, csv_log_file
 
+
+def generate_csv_pi(csv_writer: csv.writer, csv_log_file, F_USS: int, L_USS: int, R_USS: int, L_ENCD: int, R_ENCD: int, HEAD: int, L_MTR: int, R_MTR: int):
+    csv_writer.writerow([
+        time.monotonic(),
+        F_USS,
+        L_USS,
+        R_USS,
+        L_ENCD,
+        R_ENCD,
+        HEAD,
+        L_MTR,
+        R_MTR
+    ])
+    csv_log_file.flush()
+    os.fsync(csv_log_file.fileno())

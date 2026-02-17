@@ -36,7 +36,7 @@ class CmdGUI(QMainWindow):
         self.parsed_out_yml = dmm.parse_yaml(self.yaml_file_name)
 
         # Read Sockets
-        self.read_tm_socket_list = yd.read_tm_sockets(self.parsed_out_yml, 0)
+        self.read_tm_socket_list = yd.read_tm_sockets(self.parsed_out_yml, ip_setting)
         self.tm_timer = QTimer(self)
         self.tm_timer.timeout.connect(self.read_tm) #read_tm = custom method
         self.tm_timer.start(50) # ms   
@@ -112,13 +112,14 @@ class CmdGUI(QMainWindow):
 
         if csv_logging_enabled == 1:
             print("CSV logging enabled")
-            self.csv_log_path = time.strftime("nano_log_%Y%m%d_%H%M%S.csv")
-            self.log_path = time.strftime("my_log_%Y%m%d_%H%M%S.csv")
-            self.new_file = not os.path.exists(self.log_path) or os.path.getsize(self.log_path) == 0
+            self.csv_dir = "mac_csv_files"
+            os.makedirs(f"{self.csv_dir}", exist_ok=True)# create csv dir if not exist
+            self.csv_log_path = time.strftime(f"{self.csv_dir}/gui_log_%Y%m%d_%H%M%S.csv")
+            self.new_file = not os.path.exists(self.csv_log_path) or os.path.getsize(self.csv_log_path) == 0
             self.csv_log_file = open(self.csv_log_path, "a", newline="")
             self.csv_writer = csv.writer(self.csv_log_file)
-            if self.csv_log_file:
-                self.csv_writer.writerow(["t", "L_encd", "R_encd, L_motor, R_motor"])
+            if self.new_file:
+                self.csv_writer.writerow(["t", "L_encd", "R_encd", "L_motor", "R_motor"])
 
         # --- CREATING BUTTON FOR SENDING COMMANDS TO PI1 --- 
         # Setup Power Input

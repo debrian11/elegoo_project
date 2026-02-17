@@ -58,7 +58,6 @@ print_wait = 0.1
 # ------ end SETTINGS ---- #
 
 yaml_file_name = 'pi_config.yml'
-log_path = time.strftime("csv_files/my_log_%Y%m%d_%H%M%S.csv")
 ELEGOO_PORT = '/dev/arduino_elegoo'
 NANO_PORT = '/dev/arduino_nano'
 camera_path = '/dev/video0'
@@ -76,7 +75,7 @@ def myfunction():
     
         # --- CSV logger --- #
         if csv_logging == 1:
-            csv_write = data_mgr.csv_logger(log_path)
+            csv_writer, csv_log_file = data_mgr.csv_logger_pi()
         
         # --- Parse the yaml --- #
         if print_stuff == 1: print("Parsing values from yaml"); time.sleep(print_wait)
@@ -166,6 +165,8 @@ def myfunction():
                         r_motor, l_motor, elegoo_id = data_mgr.elegoo_parser(data_to_json)
                         print("ELEGOO RXd", data_to_json)
                         tx_socket.sendto(last_pkt, (tm_sendpoints["elegoo_to_mac"][0], tm_sendpoints["elegoo_to_mac"][1]))
+                        if csv_logging == 1:
+                            data_mgr.generate_csv_pi(csv_writer, csv_log_file, f_uss, l_uss, r_uss, l_encd, r_encd, head, l_motor, r_motor)
 
                 if src == "mac_cmd":
                     cmd, pwr, mac_cmd_time, mac_cmd_id = data_mgr.mac_parser(data_to_json)
@@ -213,6 +214,8 @@ def myfunction():
                         f_uss, r_uss, l_uss, head, l_encd, r_encd, nano_id = data_mgr.nano_parser(nano_json)
                         final_nano_json = { "source": "nano", **nano_json}
                         tx_socket.sendto(data_mgr.json_convert(final_nano_json), (tm_sendpoints["nano_to_mac"][0], tm_sendpoints["nano_to_mac"][1]))
+                        if csv_logging == 1:
+                            data_mgr.generate_csv_pi(csv_writer, csv_log_file, f_uss, l_uss, r_uss, l_encd, r_encd, head, l_motor, r_motor)
 
             # --- Mac laptop and cmd checker --- #
             link_checker = drm.mac_hb_checker(last_mac_pulse_time_rcv, current_time, interval_list["mac_hb_timeout"])

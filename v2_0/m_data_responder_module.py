@@ -66,9 +66,9 @@ def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int,
     
     # comment 1 or 0 to print stuff
     print_stuff = 0
-
-    done_turning = cur_time - last_time_turned
-    if done_turning >= turning_time_threshold:
+    
+    turn_elapse_time = cur_time - last_time_turned
+    if turn_elapse_time >= turning_time_threshold:
         done_turning = True
         turning = False
     else:
@@ -186,5 +186,4 @@ def motor_cmd(cmd: str, pwr: int, turning: bool, done_turning: bool, f_uss: int,
 
             return motor_cmd, last_time_turned, done_turning, turning
         return motor_cmd, last_time_turned, done_turning, turning
-    
     

@@ -21,28 +21,21 @@ import m_yaml_data as yd
 the_arg_parser = argparse.ArgumentParser(
     description="Sets the IP of data sent to either local or Pi"
 )
-the_arg_parser.add_argument('-i', "--ipsetting",  type=int, default=0)
+the_arg_parser.add_argument('-i', "--ipsetting",  type=int, default=0) #ip_setting = 0 # 0 = Local | 1 = Pi
 # currently ipsetting not even used for anything
 parsed_args = the_arg_parser.parse_args()
 ip_setting = parsed_args.ipsetting
 print("ip_setting = ", ip_setting)
-
 yaml_file_name = 'pi_config.yml'
-#ip_setting = 0 # 0 = Local | 1 = Pi
 
-def l_encd_math(pwm, encd):
-    if pwm > 0:
-        encd = encd + 1.35
-        return math.ceil(encd)
-    else:
-        return encd
-
-def r_encd_math(pwm, encd):
-    if pwm > 0:
-        encd = encd + 1.35
-        return math.ceil(encd)
-    else:
-        return encd
+# Encoder constants:
+l_encd_k = 1.35 # Constant: Ticks / (sec * pwm)
+r_encd_k = 1.29 # Constant: Ticks / (sec * pwm)
+    
+def encd_math(pwm: int, encd: float, k: float, delta_time: float):
+    if pwm > 0: 
+        return encd + (k * (pwm * delta_time))
+    else: return encd
 
 def main_function():
     # --- Initial values
@@ -63,9 +56,9 @@ def main_function():
     interval_list    = yd.intervals_read_send(parsed_out_yml)
     nano_interval_send = interval_list["nano_send_interval"]
     elegoo_interval_send = interval_list["elegoo_send_interval"]
-    read_sock_list   = yd.sim_read(parsed_out_yml)
-    tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    tx_sendpoints = yd.send_ports(parsed_out_yml, ip_setting)
+    read_sock_list   = yd.sim_read(parsed_out_yml) # Creates a socket that binds to the sim IP and Port to read
+    tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+    tx_sendpoints = yd.send_ports(parsed_out_yml, ip_setting) # Creates a socket to send the Encoder and PWM out
     time.sleep(0.3)
     
     print("Begin Loop")
@@ -89,11 +82,20 @@ def main_function():
             # Convert data into JSON
             data_to_json = json.loads(last_pkt)
             src = dmm.json_reader(data_to_json)
+            delta_time = time.monotonic() - now
+            #print(delta_time)
 
             if src == "mtr_cmd":
                 l_dir, r_dir, l_pwm, r_pwm = dmm.sim_mtr_cmd_parser(data_to_json)
-                l_encd = l_encd_math(l_pwm, l_encd)
-                r_encd = r_encd_math(r_pwm, r_encd)
+                
+                # Old way to calculate encoder #
+                #l_encd = encd_math(l_pwm, l_encd)
+                #r_encd = encd_math(r_pwm, r_encd)
+                
+                # New way to caluclate encoder #
+                l_encd = math.ceil(encd_math(l_pwm, l_encd, l_encd_k, delta_time))
+                r_encd = math.ceil(encd_math(r_pwm, r_encd, r_encd_k, delta_time))
+                #print(l_encd, r_encd)
 
         #  --- TX Data
         # Elegoo Motor Output
