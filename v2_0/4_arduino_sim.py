@@ -21,10 +21,10 @@ import m_yaml_data as yd
 the_arg_parser = argparse.ArgumentParser(
     description="Sets the IP of data sent to either local or Pi"
 )
-the_arg_parser.add_argument('-i', "--ipsetting",  type=int, default=0) #ip_setting = 0 # 0 = Local | 1 = Pi
+the_arg_parser.add_argument('-i', "--ip",  type=int, default=0, help="ip_setting = 0 # 0 = Local | 1 = Pi")
 # currently ipsetting not even used for anything
 parsed_args = the_arg_parser.parse_args()
-ip_setting = parsed_args.ipsetting
+ip_setting = parsed_args.ip
 print("ip_setting = ", ip_setting)
 yaml_file_name = 'pi_config.yml'
 
@@ -81,6 +81,7 @@ def main_function():
 
             # Convert data into JSON
             data_to_json = json.loads(last_pkt)
+            print(data_to_json)
             src = dmm.json_reader(data_to_json)
             delta_time = time.monotonic() - now
             #print(delta_time)
@@ -103,10 +104,15 @@ def main_function():
             cur_time = time.time()
             elegoo_json = { "source": "elegoo", "R_motor": r_pwm, "L_motor": l_pwm}
             tx_elegoo_json = dmm.json_convert(elegoo_json)
-            tx_socket.sendto(tx_elegoo_json, (tx_sendpoints["elegoo"][0], tx_sendpoints["elegoo"][1]))
-            last_time_elegoo_send = now
-            delta_time = time.time()
-            #print(tx_elegoo_json)
+            try:
+                tx_socket.sendto(tx_elegoo_json, (tx_sendpoints["elegoo"][0], tx_sendpoints["elegoo"][1]))
+                last_time_elegoo_send = now
+                delta_time = time.time()
+                #print(tx_elegoo_json)
+            except OSError:
+                print("Verify IP is reachable. Exiting....")
+                break
+
             #print(delta_time - cur_time)
 
         # Nano = USS | Magnemeter | Encoder

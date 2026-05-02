@@ -20,22 +20,20 @@ import m_initial_values         as iv       # Manages initial values
 import m_video_stream           as vs       # Video stream module
 
 # ----- Arguement Parser ------- #
-the_parser = argparse.ArgumentParser(
-    description="Sets IP and Port settings"
-)
-the_parser.add_argument('-i', '--ip',          type=int, default=0)  # [0] = local IP   |    [1] = Pi IP  
-the_parser.add_argument('-s', '--serialport',  type=int, default=0) # [0] = none(UDP)  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano
-the_parser.add_argument('-c', '--csv',         type=int, default=0) # [0] = OFF   |    [1] = ON    
-the_parser.add_argument('-p', '--printstuff',  type=int, default=0) # [0] = no print   |    [1] = print    
-the_parser.add_argument('-v', '--vid',         type=int, default=0) # [0] = Dis Vid Strm   |    [1] = En Vid Strm
+the_parser = argparse.ArgumentParser(description="Sets IP and Port settings" )
+the_parser.add_argument('-i', '--ip',      type=int, default=0, help="[0] = local IP   |    [1] = Pi IP")
+the_parser.add_argument('-s', '--serial',  type=int, default=0, help="[0] = none(UDP)  |  [1] = Elegoo  |  [2] = Nano  |   [3] Elegoo & Nano")
+the_parser.add_argument('-c', '--csv',     type=int, default=0, help="[0] = OFF   |    [1] = ON")
+the_parser.add_argument('-p', '--print',   type=int, default=0, help="[0] = no print   |    [1] = print")
+the_parser.add_argument('-v', '--vid',     type=int, default=0, help="[0] = Dis Vid Strm   |    [1] = En Vid Strm")
 
 # Parse the args
 args = the_parser.parse_args()
 
 ip_setting =          args.ip
-serial_port_setting = args.serialport
+serial_port_setting = args.serial
 csv_logging =         args.csv
-print_stuff =         args.printstuff
+print_stuff =         args.print
 video_setting =       args.vid
 print("Initial Settings:")
 print("ip_setting = ", ip_setting)
@@ -44,15 +42,6 @@ print("csv_logging = ", csv_logging)
 print("print_stuff = ", print_stuff)
 print("video_setting = ", video_setting)
 
-# ------ SETTINGS ------- #
-# [0] = local IP   |    [1] = Pi IP                           # Set if testing locally or on hardware. This sets the IP for the socket
-# [0] = none  |  [1] = Elegoo  |  [2] = Nano  |   [3] = Elegoo & Nano # Set this to enable serial ports:
-# [0] = OFF   |    [1] = ON                                   # Set this to enable CSV Logging
-# [0] = no print   |    [1] = print                           # set true if wanting to print stuff
-# [0] = UDP Test Tool   |    [1] = Nano HW                    # Set this to enable commanding motors based on 
-#                                                               Sensor data from UDP Test Tool or Nano HW
-# [0] = UDP Test Tool   |    [1] = Elegoo HW                  # Set this to enable test Elegoo or HW
-# [0] = Disable Video Stream   |    [1] = Enable Video Stream # Set this to enable video stream at /dev/video0
 print_wait = 0.1  
 
 # ------ end SETTINGS ---- #
@@ -260,7 +249,7 @@ def myfunction():
 
             time.sleep(0.001)
     except KeyboardInterrupt:
-        print("\Shutting Down")
+        print("Shutting Down")
     
     finally:
         if serial_port_setting == 3:

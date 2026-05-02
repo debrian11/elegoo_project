@@ -2,7 +2,8 @@
 import socket
 
 pi_ip = "192.168.1.97"
-mac_ip = "192.168.1.72"
+mac_ip = "192.168.1.118"
+readlocalhost = "0.0.0.0"
 
 # --- Read data coming into Pi. --- 
 # #Used by Pi itself
@@ -32,9 +33,9 @@ def assign_read_sockets(parsed_out_yaml: dict) -> list:
 # Send data going into Pi. Used by GUI and Test Script
 def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
     if test_setting == 1:
-        tx_ip = "192.168.1.97" # pi ip
+        tx_ip = pi_ip # pi ip
     else:
-        tx_ip = "192.168.1.72" # laptop ip
+        tx_ip = mac_ip # laptop ip
 
     sendpoints = {
         "nano"                  : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_pi"]["port"]),
@@ -54,9 +55,9 @@ def send_ports(parsed_out_yaml: dict, test_setting: int) -> dict:
 def read_tm_sockets(parsed_out_yaml: dict, test_setting: int) -> list:
     all_sockets = {}
     if test_setting == 1:
-        tx_ip = pi_ip
+        tx_ip = readlocalhost
     else:
-        tx_ip = mac_ip
+        tx_ip = readlocalhost
     endpoints = {
         "nano_to_mac"            : (tx_ip, parsed_out_yaml["network"]["endpoints"]["nano_to_mac"]["port"]),
         "elegoo_to_mac"          : (tx_ip, parsed_out_yaml["network"]["endpoints"]["elegoo_to_mac"]["port"]),
@@ -119,14 +120,13 @@ def send_json(send_socket: socket, cur_time: float, last_time: float, timing_int
         send_socket.sendto(json_msg, (send_ip, send_port))
         last_time = cur_time
         counter += 1
-        #print(who_sent, json_msg)
     return last_time, counter
 
 # --- Sim ports between Pi and Arduino sim --- 
 # Pi to Arduino
 def sim_read(parsed_out_yaml: dict) -> list:
     all_sockets = {}
-    rx_ip = "0.0.0.0"
+    rx_ip = readlocalhost
     endpoints = {
         "pi_to_sim_mtr"      : (rx_ip, parsed_out_yaml["network"]["endpoints"]["pi_to_sim_mtr"]["port"]),
     } 

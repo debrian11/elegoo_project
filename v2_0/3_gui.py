@@ -21,8 +21,8 @@ the_parser = argparse.ArgumentParser(
     description='Sets IP setting to either local or to pi'
 )
 
-the_parser.add_argument('-i', '--ip', type=int, default=0)  # 0 = Local | 1 = Pi
-the_parser.add_argument('-c', '--csv', type=int, default=0) # 0 = disabled | 1 = enabled
+the_parser.add_argument('-i', '--ip', type=int, default=0, help="0 = Local | 1 = Pi")
+the_parser.add_argument('-c', '--csv', type=int, default=0, help="0 = disabled | 1 = enabled") 
 args = the_parser.parse_args()
 ip_setting = args.ip
 csv_logging_enabled = args.csv
@@ -43,8 +43,10 @@ class CmdGUI(QMainWindow):
 
         # TX Sockets
         self.sendpoints = yd.send_ports(self.parsed_out_yml, ip_setting)
-        self.vid_ip = self.sendpoints["vid_cmd"][0]
-        self.vid_port = self.sendpoints["vid_cmd"][1]
+        #self.vid_ip = self.sendpoints["vid_cmd"][0]
+        self.vid_ip = "0.0.0.0"
+        #self.vid_port = self.sendpoints["vid_cmd"][1]
+        self.vid_port = self.parsed_out_yml["network"]["endpoints"]["pi_to_mac_vid"]["port"]
         self.interval_list = yd.intervals_read_send(self.parsed_out_yml)
         self.pi1_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 

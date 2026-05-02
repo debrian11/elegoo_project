@@ -21,7 +21,7 @@ def serial_port_setup(port_name: str, baud_rate: int):
             serial_port = serial.Serial(port=port_name, baudrate=baud_rate, timeout=0)
             time.sleep(3.0)
             serial_port.reset_input_buffer()
-            print(F"Connected to port at {port_name}")
+            print(f"Connected to port at {port_name}")
             return serial_port
         
 def write_json(serial_port, mtr_cmd: str):
